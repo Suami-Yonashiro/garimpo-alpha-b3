@@ -123,10 +123,23 @@ As sub-contas de D&A variam de nome entre empresas → exigem casamento por `DS_
 
 ---
 
-## 6. Itens em aberto (a fechar antes da Camada 1)
+## 6. Achados de qualidade de dados (descobertos ao rodar o universo)
 
+- ⚠️ **Unidade do nº de ações é inconsistente** (`composicao_capital`): algumas
+  empresas reportam em **milhares** (VALE, ITUB, ABEV, BBDC ~1e6–1e7), outras em
+  **unidades** (PETR4, WEGE3, SUZB3… ~1e8–1e10). Solução atual: normalizar para
+  milhares com limiar `1e8` (ver `src/silver.py: acoes_em_circulacao`). Há um vão
+  seguro entre os dois grupos para o IBrX; revisar se ampliar para small caps.
+- ⚠️ **Nem todo banco usa as mesmas contas:** ITUB4 tem PL em `2.08`, mas **BBDC4
+  (Bradesco) não** — foi pulado. Confirmar o código de PL/lucro do Bradesco e de
+  outros bancos (pode haver mais de um layout financeiro).
+- ⚠️ **Graham de 1 ano superestima cíclicas** em pico de lucro (PETR4, SUZB3 2023).
+  Mitigar com lucro normalizado (média plurianual) e com o score composto.
+
+## 7. Itens em aberto (a fechar conforme a Camada 1 evolui)
+
+- [ ] Resolver contas do **Bradesco** e validar o conjunto de bancos.
 - [ ] Confirmar sub-contas exatas de **dívida** (`2.01.04` / `2.02.01`) em 2–3 industriais.
 - [ ] Mapear sub-contas de **D&A** dentro do `6.01` para o EBITDA.
-- [ ] Definir **classificação setorial** (financeiro vs operacional): usar setor da B3/brapi
-      ou heurística pela estrutura da DRE (`3.01` "Intermediação Financeira" ⇒ banco).
+- [ ] Definir **classificação setorial** automatica (hoje manual em `src/universo.py`).
 - [ ] Repetir a verificação nos arquivos **ITR** (trimestral) — estrutura é a mesma, confirmar.

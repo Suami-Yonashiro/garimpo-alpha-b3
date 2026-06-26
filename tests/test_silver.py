@@ -40,15 +40,26 @@ def test_valor_conta_pega_a_conta_certa():
     assert valor_conta(d, "3.11") == 200.0
 
 
-def test_acoes_em_circulacao_desconta_tesouraria():
+def test_acoes_em_circulacao_em_milhares_mantem():
+    # valor pequeno (ja em milhares) -> nao normaliza
     acoes = pd.DataFrame(
         [{"CNPJ_CIA": "00", "QT_ACAO_TOTAL_CAP_INTEGR": 1000, "QT_ACAO_TOTAL_TESOURO": 50}]
     )
     assert acoes_em_circulacao(acoes) == 950.0
 
 
-def test_calcular_indicadores_lpa_vpa():
-    dre = _dre_fake()
+def test_acoes_em_circulacao_em_unidades_normaliza():
+    # valor grande (em unidades) -> divide por 1000 para virar milhares
+    acoes = pd.DataFrame(
+        [{"CNPJ_CIA": "00", "QT_ACAO_TOTAL_CAP_INTEGR": 13_000_000_000,
+          "QT_ACAO_TOTAL_TESOURO": 100_000_000}]
+    )
+    # (13e9 - 100e6) / 1000 = 12_900_000 (milhares)
+    assert acoes_em_circulacao(acoes) == 12_900_000.0
+
+
+def test_calcular_indicadores_operacional():
+    dre = _dre_fake()  # conta 3.11 (operacional)
     bpp = pd.DataFrame(
         [{"ORDEM_EXERC": "ÚLTIMO", "VERSAO": 1, "CD_CONTA": "2.03",
           "VL_CONTA": 950.0, "DT_REFER": "2023-12-31", "DT_RECEB": "2024-03-15"}]
@@ -56,9 +67,25 @@ def test_calcular_indicadores_lpa_vpa():
     acoes = pd.DataFrame(
         [{"CNPJ_CIA": "00", "QT_ACAO_TOTAL_CAP_INTEGR": 1000, "QT_ACAO_TOTAL_TESOURO": 50}]
     )
-    ind = calcular_indicadores(dre, bpp, acoes, ticker="TEST3")
-    # lucro 200 / 950 acoes
-    assert round(ind["lpa"], 4) == round(200.0 / 950.0, 4)
-    # PL 950 / 950 acoes = 1.0
-    assert ind["vpa"] == 1.0
-    assert ind["dt_receb"] == "2024-03-15"  # point-in-time veio da v2 correta
+    ind = calcular_indicadores(dre, bpp, acoes, ticker="TEST3", setor="operacional")
+    assert round(ind["lpa"], 4) == round(200.0 / 950.0, 4)  # lucro 200 / 950
+    assert ind["vpa"] == 1.0                                  # PL 950 / 950
+    assert ind["dt_receb"] == "2024-03-15"                    # point-in-time correto
+
+
+def test_calcular_indicadores_banco_usa_contas_diferentes():
+    # banco: lucro = 3.09, PL = 2.08 (e NAO 3.11 / 2.03)
+    dre = pd.DataFrame(
+        [{"ORDEM_EXERC": "ÚLTIMO", "VERSAO": 1, "CD_CONTA": "3.09",
+          "VL_CONTA": 300.0, "DT_REFER": "2023-12-31", "DT_RECEB": "2024-02-10"}]
+    )
+    bpp = pd.DataFrame(
+        [{"ORDEM_EXERC": "ÚLTIMO", "VERSAO": 1, "CD_CONTA": "2.08",
+          "VL_CONTA": 600.0, "DT_REFER": "2023-12-31", "DT_RECEB": "2024-02-10"}]
+    )
+    acoes = pd.DataFrame(
+        [{"CNPJ_CIA": "00", "QT_ACAO_TOTAL_CAP_INTEGR": 300, "QT_ACAO_TOTAL_TESOURO": 0}]
+    )
+    ind = calcular_indicadores(dre, bpp, acoes, ticker="BANK4", setor="banco")
+    assert ind["lpa"] == 1.0   # 300 / 300
+    assert ind["vpa"] == 2.0   # 600 / 300

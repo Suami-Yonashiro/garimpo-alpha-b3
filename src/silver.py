@@ -1,18 +1,16 @@
 """Camada SILVER — limpa o Bronze e deriva indicadores fundamentais.
 
-Para a fatia vertical: le o Bronze de VALE3, aplica a regra de dedup obrigatoria
-(ORDEM_EXERC = ULTIMO + maior VERSAO; ver docs/03-dicionario-de-dados.md) e
-extrai LPA e VPA.
-
-NOTA: VALE e empresa OPERACIONAL -> lucro liquido = conta 3.11, PL = conta 2.03.
-Para bancos os codigos mudam (3.09 / 2.08). O resolvedor por setor entra quando
-generalizarmos para todo o universo (item em aberto do dicionario).
+Le o Bronze (varias empresas), aplica a regra de dedup obrigatoria (ORDEM_EXERC =
+ULTIMO + maior VERSAO; ver docs/03-dicionario-de-dados.md) e extrai LPA e VPA,
+escolhendo as contas conforme o SETOR (banco x operacional).
 """
 import pandas as pd
 
-# codigos de conta (plano de contas CVM, empresa operacional)
-CD_LUCRO_LIQUIDO = "3.11"   # Lucro/Prejuizo Consolidado do Periodo
-CD_PATRIMONIO = "2.03"      # Patrimonio Liquido Consolidado
+# codigos de conta por setor (plano de contas CVM; ver dicionario de dados)
+CONTAS_POR_SETOR = {
+    "operacional": {"lucro": "3.11", "pl": "2.03"},  # industria/servicos
+    "banco": {"lucro": "3.09", "pl": "2.08"},          # financeiro
+}
 
 
 def dedup_ultimo(df: pd.DataFrame) -> pd.DataFrame:
@@ -37,48 +35,76 @@ def valor_conta(df: pd.DataFrame, cd_conta: str) -> float:
     return float(linha["VL_CONTA"].iloc[0])
 
 
+# Acima deste valor, o numero de acoes esta em UNIDADES (nao milhares).
+# A CVM e inconsistente: VALE/ITUB reportam em milhares (~1e6-1e7), enquanto
+# PETR4/WEGE3 reportam em unidades (~1e9-1e10). Empresas do IBrX tem sempre
+# >~1e8 acoes reais, entao ha um vao seguro entre os dois grupos.
+_LIMIAR_UNIDADES = 1e8
+
+
 def acoes_em_circulacao(acoes: pd.DataFrame) -> float:
-    """Acoes totais menos as em tesouraria (em milhares)."""
+    """Acoes em circulacao (totais - tesouraria), padronizadas em MILHARES.
+
+    Normaliza a inconsistencia de unidade da CVM: se o total esta em unidades
+    (>= limiar), divide total e tesouraria por 1000 para virar milhares.
+    """
     a = acoes.iloc[0]
-    return float(a["QT_ACAO_TOTAL_CAP_INTEGR"] - a["QT_ACAO_TOTAL_TESOURO"])
+    total = float(a["QT_ACAO_TOTAL_CAP_INTEGR"])
+    tesouro = float(a["QT_ACAO_TOTAL_TESOURO"])
+    fator = 1000.0 if total >= _LIMIAR_UNIDADES else 1.0
+    return (total - tesouro) / fator
 
 
 def calcular_indicadores(
-    dre: pd.DataFrame, bpp: pd.DataFrame, acoes: pd.DataFrame, ticker: str
+    dre: pd.DataFrame, bpp: pd.DataFrame, acoes: pd.DataFrame, ticker: str, setor: str
 ) -> dict:
-    """Aplica dedup e calcula LPA e VPA a partir dos 3 demonstrativos Bronze."""
+    """Aplica dedup e calcula LPA e VPA, escolhendo as contas pelo setor."""
+    if setor not in CONTAS_POR_SETOR:
+        raise ValueError(f"Setor desconhecido: {setor}")
+    contas = CONTAS_POR_SETOR[setor]
+
     dre_u = dedup_ultimo(dre)
     bpp_u = dedup_ultimo(bpp)
 
-    lucro = valor_conta(dre_u, CD_LUCRO_LIQUIDO)   # em mil R$
-    patrimonio = valor_conta(bpp_u, CD_PATRIMONIO)  # em mil R$
-    qt_acoes = acoes_em_circulacao(acoes)           # em milhares
+    lucro = valor_conta(dre_u, contas["lucro"])     # em mil R$
+    patrimonio = valor_conta(bpp_u, contas["pl"])    # em mil R$
+    qt_acoes = acoes_em_circulacao(acoes)            # em milhares
 
-    # LPA e VPA: lucro/PL (mil R$) / acoes (mil) -> as unidades 'mil' se cancelam,
-    # resultando em R$ por acao.
-    lpa = lucro / qt_acoes
-    vpa = patrimonio / qt_acoes
-
+    # LPA/VPA: as unidades 'mil' se cancelam -> R$ por acao.
     return {
         "ticker": ticker,
+        "setor": setor,
         "cnpj": acoes.iloc[0]["CNPJ_CIA"],
         "dt_refer": dre_u["DT_REFER"].iloc[0],
         "dt_receb": dre_u["DT_RECEB"].iloc[0],   # ancora point-in-time
         "lucro_liquido_mil": lucro,
         "patrimonio_liquido_mil": patrimonio,
         "acoes_circulacao_mil": qt_acoes,
-        "lpa": lpa,
-        "vpa": vpa,
+        "lpa": lucro / qt_acoes,
+        "vpa": patrimonio / qt_acoes,
     }
 
 
-def build_silver_vale(engine) -> pd.DataFrame:
-    """Le o Bronze do banco, calcula os indicadores e grava silver_fundamentals."""
+def build_silver(engine, universo: dict) -> pd.DataFrame:
+    """Le o Bronze do banco, calcula indicadores por empresa e grava a Silver."""
     dre = pd.read_sql("select * from bronze_cvm_dre", engine)
     bpp = pd.read_sql("select * from bronze_cvm_bpp", engine)
     acoes = pd.read_sql("select * from bronze_cvm_acoes", engine)
 
-    indicadores = calcular_indicadores(dre, bpp, acoes, ticker="VALE3")
-    silver = pd.DataFrame([indicadores])
+    linhas = []
+    for ticker, info in universo.items():
+        try:
+            ind = calcular_indicadores(
+                dre[dre["ticker"] == ticker],
+                bpp[bpp["ticker"] == ticker],
+                acoes[acoes["ticker"] == ticker],
+                ticker=ticker,
+                setor=info["setor"],
+            )
+            linhas.append(ind)
+        except (ValueError, IndexError) as exc:
+            print(f"  [aviso] {ticker} pulado: {exc}")
+
+    silver = pd.DataFrame(linhas)
     silver.to_sql("silver_fundamentals", engine, if_exists="replace", index=False)
     return silver
