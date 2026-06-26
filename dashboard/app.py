@@ -19,7 +19,7 @@ CORES = {"Buy": "#16a34a", "Hold": "#d97706", "Avoid": "#dc2626", "N/A": "#6b728
 
 st.title("📊 Garimpo Alpha B3")
 st.caption(
-    "Ranking fundamentalista — score composto (Graham + Buffett, via z-score). "
+    "Ranking fundamentalista — score composto (Graham + Buffett + EV/EBITDA, via z-score). "
     "Projeto educacional; não é recomendação de investimento."
 )
 
@@ -54,7 +54,7 @@ st.divider()
 # --- Tabela de ranking (por score composto) ---
 vis = gold[
     ["ranking", "ticker", "setor", "score_final", "z_graham", "z_buffett",
-     "roe", "margem_liquida", "classificacao"]
+     "z_evebitda", "ev_ebitda", "roe", "classificacao"]
 ].copy()
 
 
@@ -65,18 +65,20 @@ def colorir_classe(valor: str) -> str:
 styled = (
     vis.style.map(colorir_classe, subset=["classificacao"]).format(
         {
-            "score_final": "{:.2f}",
+            "score_final": "{:+.2f}",
             "z_graham": "{:+.2f}",
             "z_buffett": "{:+.2f}",
+            "z_evebitda": "{:+.2f}",
+            "ev_ebitda": "{:.1f}x",
             "roe": "{:.1%}",
-            "margem_liquida": "{:.1%}",
-        }
+        },
+        na_rep="—",
     )
 )
 st.dataframe(styled, use_container_width=True, hide_index=True)
 
 st.caption(
-    "score_final = 0,40·z(Graham) + 0,60·z(Buffett). z = desvios-padrão acima/abaixo "
-    "da média do universo. 'classificação' reflete a margem de Graham. "
-    "Faltam EV/EBITDA, Lynch e DCF (e os pesos finais do PRD)."
+    "score_final = média ponderada (pesos PRD) dos métodos disponíveis por empresa, "
+    "renormalizados — bancos não têm EV/EBITDA. z = desvios-padrão vs. a média do "
+    "universo (EV/EBITDA invertido: menor múltiplo = melhor). Faltam Lynch e DCF."
 )

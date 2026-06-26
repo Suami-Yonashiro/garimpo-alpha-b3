@@ -10,12 +10,11 @@ def main() -> None:
     gold = build_gold(get_engine())
     print(f"\nRanking por score composto — {len(gold)} acoes\n")
     cols = ["ranking", "ticker", "setor", "score_final", "z_graham", "z_buffett",
-            "roe", "margem_liquida", "classificacao"]
+            "z_evebitda", "ev_ebitda", "roe", "classificacao"]
     vis = gold[cols].copy()
-    for c in ["score_final", "z_graham", "z_buffett"]:
+    for c in ["score_final", "z_graham", "z_buffett", "z_evebitda", "ev_ebitda"]:
         vis[c] = vis[c].round(2)
-    for c in ["roe", "margem_liquida"]:
-        vis[c] = (vis[c] * 100).round(1)
+    vis["roe"] = (vis["roe"] * 100).round(1)
     print(vis.to_string(index=False))
 
 

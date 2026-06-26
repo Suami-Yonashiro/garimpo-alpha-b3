@@ -1,19 +1,20 @@
 """Score composto — combina os metodos via z-score (normalizacao cruzada).
 
 z-score: para cada metrica, quantos desvios-padrao a empresa esta acima/abaixo
-da media do universo. Coloca metricas de escalas diferentes (margem de Graham %,
-ROE, margem liquida) na MESMA regua, permitindo somar com pesos.
+da media do universo. Coloca metricas de escalas diferentes na MESMA regua.
 
-Pesos (PRD secao 6) renormalizados para os metodos disponiveis nesta fase:
-Buffett 30% + Graham 20% -> Buffett 0.60, Graham 0.40.
+Pesos do PRD (secao 6). Como ainda faltam Lynch e DCF, e como bancos nao tem
+EV/EBITDA, o score de cada empresa e a media PONDERADA apenas dos metodos
+DISPONIVEIS para ela (pesos renormalizados por linha) — exatamente o que o PRD pede.
 """
 import pandas as pd
 
-PESOS = {"graham": 0.40, "buffett": 0.60}
+# pesos brutos do PRD; renormalizados por linha conforme os metodos disponiveis
+PESOS = {"graham": 0.20, "buffett": 0.30, "evebitda": 0.15}
 
 
 def zscore(serie: pd.Series) -> pd.Series:
-    """(valor - media) / desvio-padrao. Se desvio 0/NaN, retorna zeros."""
+    """(valor - media) / desvio-padrao. NaN sao ignorados no calculo e preservados."""
     desvio = serie.std(ddof=0)
     if not desvio or pd.isna(desvio):
         return pd.Series(0.0, index=serie.index)
@@ -26,12 +27,24 @@ def winsorizar(serie: pd.Series, limite: float = 0.01) -> pd.Series:
     return serie.clip(lower=inf, upper=sup)
 
 
+def _media_ponderada_disponivel(row: pd.Series) -> float:
+    """Media ponderada dos sub-scores nao-nulos, com pesos renormalizados."""
+    colunas = {"graham": "z_graham", "buffett": "z_buffett", "evebitda": "z_evebitda"}
+    num = den = 0.0
+    for metodo, coluna in colunas.items():
+        valor = row[coluna]
+        if pd.notna(valor):
+            num += PESOS[metodo] * valor
+            den += PESOS[metodo]
+    return num / den if den else float("nan")
+
+
 def score_composto(df: pd.DataFrame) -> pd.DataFrame:
-    """Recebe colunas margem_seguranca, roe, margem_liquida e devolve sub-scores
-    (z-score) + score_final ponderado. Buffett = media de z(ROE) e z(margem)."""
+    """Recebe margem_seguranca, roe, margem_liquida, ev_ebitda e devolve sub-scores
+    (z-score) + score_final (media ponderada dos metodos disponiveis por empresa)."""
     out = df.copy()
 
-    # sub-score Graham: valor x preco (margem de seguranca)
+    # sub-score Graham: valor x preco (maior margem = melhor)
     out["z_graham"] = zscore(winsorizar(out["margem_seguranca"]))
 
     # sub-score Buffett: qualidade (ROE + margem liquida)
@@ -39,7 +52,8 @@ def score_composto(df: pd.DataFrame) -> pd.DataFrame:
     z_margem = zscore(winsorizar(out["margem_liquida"]))
     out["z_buffett"] = (z_roe + z_margem) / 2
 
-    out["score_final"] = (
-        PESOS["graham"] * out["z_graham"] + PESOS["buffett"] * out["z_buffett"]
-    )
+    # sub-score EV/EBITDA: MENOR multiplo = melhor -> inverte o sinal
+    out["z_evebitda"] = -zscore(winsorizar(out["ev_ebitda"]))
+
+    out["score_final"] = out.apply(_media_ponderada_disponivel, axis=1)
     return out
