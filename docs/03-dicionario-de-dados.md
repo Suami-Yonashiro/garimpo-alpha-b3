@@ -130,15 +130,15 @@ As sub-contas de D&A variam de nome entre empresas → exigem casamento por `DS_
   **unidades** (PETR4, WEGE3, SUZB3… ~1e8–1e10). Solução atual: normalizar para
   milhares com limiar `1e8` (ver `src/silver.py: acoes_em_circulacao`). Há um vão
   seguro entre os dois grupos para o IBrX; revisar se ampliar para small caps.
-- ⚠️ **Nem todo banco usa as mesmas contas:** ITUB4 tem PL em `2.08`, mas **BBDC4
-  (Bradesco) não** — foi pulado. Confirmar o código de PL/lucro do Bradesco e de
-  outros bancos (pode haver mais de um layout financeiro).
+- ✅ **Código de conta varia ATÉ entre bancos** (Itaú lucro 3.09 / PL 2.08; Bradesco
+  3.11 / 2.07; VALE 3.11 / 2.03). **Resolvido** adotando resolução por **descrição**
+  (`Patrimônio Líquido Consolidado`, `Lucro…Consolidado do Período`) em vez de código —
+  ver `src/silver.py: valor_por_descricao`. Receita segue pelo código `3.01` (estável).
 - ⚠️ **Graham de 1 ano superestima cíclicas** em pico de lucro (PETR4, SUZB3 2023).
   Mitigar com lucro normalizado (média plurianual) e com o score composto.
 
 ## 7. Itens em aberto (a fechar conforme a Camada 1 evolui)
 
-- [ ] Resolver contas do **Bradesco** e validar o conjunto de bancos.
 - [ ] Confirmar sub-contas exatas de **dívida** (`2.01.04` / `2.02.01`) em 2–3 industriais.
 - [ ] Mapear sub-contas de **D&A** dentro do `6.01` para o EBITDA.
 - [ ] Definir **classificação setorial** automatica (hoje manual em `src/universo.py`).

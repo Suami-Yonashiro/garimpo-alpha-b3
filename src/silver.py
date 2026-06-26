@@ -6,12 +6,13 @@ escolhendo as contas conforme o SETOR (banco x operacional).
 """
 import pandas as pd
 
-# codigos de conta por setor (plano de contas CVM; ver dicionario de dados)
-# 'receita' = 3.01 nos dois setores (Receita de Venda / Receitas de Interm. Financeira)
-CONTAS_POR_SETOR = {
-    "operacional": {"lucro": "3.11", "pl": "2.03", "receita": "3.01"},
-    "banco": {"lucro": "3.09", "pl": "2.08", "receita": "3.01"},
-}
+# Resolucao por DESCRICAO (robusto): o codigo do lucro/PL varia ate ENTRE bancos
+# (Itau 3.09/2.08, Bradesco 3.11/2.07, VALE 3.11/2.03). A descricao e estavel.
+# Receita fica pelo codigo 3.01 (consistente nos dois setores).
+# Casamos sem acento por seguranca (ex.: 'quido' evita o 'i' acentuado de Liquido).
+TERMOS_LUCRO = ("Lucro", "Consolidado do Per")   # Lucro/Prejuizo Consolidado do Periodo
+TERMOS_PL = ("Patrim", "quido Consolidado")       # Patrimonio Liquido Consolidado
+CD_RECEITA = "3.01"
 
 
 def dedup_ultimo(df: pd.DataFrame) -> pd.DataFrame:
@@ -34,6 +35,22 @@ def valor_conta(df: pd.DataFrame, cd_conta: str) -> float:
     if linha.empty:
         raise ValueError(f"Conta {cd_conta} nao encontrada no demonstrativo.")
     return float(linha["VL_CONTA"].iloc[0])
+
+
+def valor_por_descricao(df: pd.DataFrame, *termos: str) -> float:
+    """Retorna o VL_CONTA da conta cuja DS_CONTA contem TODOS os termos.
+
+    Entre candidatas, pega o nivel mais alto (menor numero de pontos no CD_CONTA),
+    evitando pegar uma sub-conta no lugar do total. Robusto a codigo variar.
+    """
+    mask = pd.Series(True, index=df.index)
+    for termo in termos:
+        mask &= df["DS_CONTA"].str.contains(termo, case=False, na=False)
+    candidatas = df[mask]
+    if candidatas.empty:
+        raise ValueError(f"Nenhuma conta com a descricao {termos}.")
+    niveis = candidatas["CD_CONTA"].str.count(r"\.")
+    return float(candidatas.loc[niveis.idxmin(), "VL_CONTA"])
 
 
 # Acima deste valor, o numero de acoes esta em UNIDADES (nao milhares).
@@ -59,18 +76,14 @@ def acoes_em_circulacao(acoes: pd.DataFrame) -> float:
 def calcular_indicadores(
     dre: pd.DataFrame, bpp: pd.DataFrame, acoes: pd.DataFrame, ticker: str, setor: str
 ) -> dict:
-    """Aplica dedup e calcula LPA e VPA, escolhendo as contas pelo setor."""
-    if setor not in CONTAS_POR_SETOR:
-        raise ValueError(f"Setor desconhecido: {setor}")
-    contas = CONTAS_POR_SETOR[setor]
-
+    """Aplica dedup e calcula LPA e VPA, resolvendo contas por descricao."""
     dre_u = dedup_ultimo(dre)
     bpp_u = dedup_ultimo(bpp)
 
-    lucro = valor_conta(dre_u, contas["lucro"])      # em mil R$
-    patrimonio = valor_conta(bpp_u, contas["pl"])     # em mil R$
-    receita = valor_conta(dre_u, contas["receita"])   # em mil R$
-    qt_acoes = acoes_em_circulacao(acoes)             # em milhares
+    lucro = valor_por_descricao(dre_u, *TERMOS_LUCRO)    # em mil R$
+    patrimonio = valor_por_descricao(bpp_u, *TERMOS_PL)   # em mil R$
+    receita = valor_conta(dre_u, CD_RECEITA)              # em mil R$
+    qt_acoes = acoes_em_circulacao(acoes)                 # em milhares
 
     # LPA/VPA: as unidades 'mil' se cancelam -> R$ por acao.
     return {
