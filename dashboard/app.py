@@ -19,7 +19,7 @@ CORES = {"Buy": "#16a34a", "Hold": "#d97706", "Avoid": "#dc2626", "N/A": "#6b728
 
 st.title("📊 Garimpo Alpha B3")
 st.caption(
-    "Ranking fundamentalista (método de Graham). "
+    "Ranking fundamentalista — score composto (Graham + Buffett, via z-score). "
     "Projeto educacional; não é recomendação de investimento."
 )
 
@@ -47,14 +47,14 @@ topo = gold.iloc[0]
 c1, c2, c3 = st.columns(3)
 c1.metric("Ações analisadas", n_total)
 c2.metric("Oportunidades (Buy)", n_buy)
-c3.metric("Top do ranking", f"{topo['ticker']}  (+{topo['margem_seguranca'] * 100:.0f}%)")
+c3.metric("Top do ranking", f"{topo['ticker']}  (score {topo['score_final']:.2f})")
 
 st.divider()
 
-# --- Tabela de ranking ---
+# --- Tabela de ranking (por score composto) ---
 vis = gold[
-    ["ranking", "ticker", "setor", "valor_graham", "preco_atual",
-     "margem_seguranca", "classificacao"]
+    ["ranking", "ticker", "setor", "score_final", "z_graham", "z_buffett",
+     "roe", "margem_liquida", "classificacao"]
 ].copy()
 
 
@@ -65,15 +65,18 @@ def colorir_classe(valor: str) -> str:
 styled = (
     vis.style.map(colorir_classe, subset=["classificacao"]).format(
         {
-            "valor_graham": "R$ {:.2f}",
-            "preco_atual": "R$ {:.2f}",
-            "margem_seguranca": "{:.1%}",
+            "score_final": "{:.2f}",
+            "z_graham": "{:+.2f}",
+            "z_buffett": "{:+.2f}",
+            "roe": "{:.1%}",
+            "margem_liquida": "{:.1%}",
         }
     )
 )
 st.dataframe(styled, use_container_width=True, hide_index=True)
 
 st.caption(
-    "Graham de um único ano superestima empresas cíclicas em pico de lucro — "
-    "por isso o produto final combina vários métodos (score composto)."
+    "score_final = 0,40·z(Graham) + 0,60·z(Buffett). z = desvios-padrão acima/abaixo "
+    "da média do universo. 'classificação' reflete a margem de Graham. "
+    "Faltam EV/EBITDA, Lynch e DCF (e os pesos finais do PRD)."
 )

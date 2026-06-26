@@ -7,9 +7,10 @@ escolhendo as contas conforme o SETOR (banco x operacional).
 import pandas as pd
 
 # codigos de conta por setor (plano de contas CVM; ver dicionario de dados)
+# 'receita' = 3.01 nos dois setores (Receita de Venda / Receitas de Interm. Financeira)
 CONTAS_POR_SETOR = {
-    "operacional": {"lucro": "3.11", "pl": "2.03"},  # industria/servicos
-    "banco": {"lucro": "3.09", "pl": "2.08"},          # financeiro
+    "operacional": {"lucro": "3.11", "pl": "2.03", "receita": "3.01"},
+    "banco": {"lucro": "3.09", "pl": "2.08", "receita": "3.01"},
 }
 
 
@@ -66,9 +67,10 @@ def calcular_indicadores(
     dre_u = dedup_ultimo(dre)
     bpp_u = dedup_ultimo(bpp)
 
-    lucro = valor_conta(dre_u, contas["lucro"])     # em mil R$
-    patrimonio = valor_conta(bpp_u, contas["pl"])    # em mil R$
-    qt_acoes = acoes_em_circulacao(acoes)            # em milhares
+    lucro = valor_conta(dre_u, contas["lucro"])      # em mil R$
+    patrimonio = valor_conta(bpp_u, contas["pl"])     # em mil R$
+    receita = valor_conta(dre_u, contas["receita"])   # em mil R$
+    qt_acoes = acoes_em_circulacao(acoes)             # em milhares
 
     # LPA/VPA: as unidades 'mil' se cancelam -> R$ por acao.
     return {
@@ -79,6 +81,7 @@ def calcular_indicadores(
         "dt_receb": dre_u["DT_RECEB"].iloc[0],   # ancora point-in-time
         "lucro_liquido_mil": lucro,
         "patrimonio_liquido_mil": patrimonio,
+        "receita_mil": receita,
         "acoes_circulacao_mil": qt_acoes,
         "lpa": lucro / qt_acoes,
         "vpa": patrimonio / qt_acoes,

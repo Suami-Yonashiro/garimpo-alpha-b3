@@ -1,13 +1,14 @@
-"""Camada GOLD — score fundamentalista pronto para consumo (ranking).
+"""Camada GOLD — score composto (Graham + Buffett) e ranking.
 
-Le silver_fundamentals (varias empresas), busca os precos atuais e aplica o
-metodo de Graham, gerando um RANKING por margem de seguranca em
-gold_fundamental_scores.
+Le silver_fundamentals, busca precos, calcula os indicadores de cada metodo e
+combina tudo num score_final via z-score (src/fundamental/score.py).
 """
 import pandas as pd
 
 from ingestion.precos import precos_atuais_yf
+from src.fundamental.buffett import margem_liquida, roe
 from src.fundamental.graham import classificar, margem_seguranca, valor_intrinseco
+from src.fundamental.score import score_composto
 
 
 def build_gold(engine) -> pd.DataFrame:
@@ -24,18 +25,19 @@ def build_gold(engine) -> pd.DataFrame:
                 "ticker": row["ticker"],
                 "setor": row["setor"],
                 "dt_refer": row["dt_refer"],
-                "lpa": row["lpa"],
-                "vpa": row["vpa"],
-                "valor_graham": valor,
                 "preco_atual": preco,
+                # Graham
+                "valor_graham": valor,
                 "margem_seguranca": margem,
                 "classificacao": classificar(margem),
+                # Buffett
+                "roe": roe(row["lucro_liquido_mil"], row["patrimonio_liquido_mil"]),
+                "margem_liquida": margem_liquida(row["lucro_liquido_mil"], row["receita_mil"]),
             }
         )
 
-    gold = pd.DataFrame(linhas).sort_values(
-        "margem_seguranca", ascending=False, na_position="last"
-    )
+    gold = score_composto(pd.DataFrame(linhas))
+    gold = gold.sort_values("score_final", ascending=False, na_position="last")
     gold.insert(0, "ranking", range(1, len(gold) + 1))
     gold.to_sql("gold_fundamental_scores", engine, if_exists="replace", index=False)
     return gold

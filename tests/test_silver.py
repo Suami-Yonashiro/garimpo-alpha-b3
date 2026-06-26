@@ -25,6 +25,9 @@ def _dre_fake():
             # ('PENÚLTIMO' contem 'ÚLTIMO' -> pega o bug do contains ingênuo)
             {"ORDEM_EXERC": "PENÚLTIMO", "VERSAO": 2, "CD_CONTA": "3.11",
              "VL_CONTA": 999.0, "DT_REFER": "2022-12-31", "DT_RECEB": "2023-03-01"},
+            # receita (3.01), necessaria para a margem liquida
+            {"ORDEM_EXERC": "ÚLTIMO", "VERSAO": 2, "CD_CONTA": "3.01",
+             "VL_CONTA": 1000.0, "DT_REFER": "2023-12-31", "DT_RECEB": "2024-03-15"},
         ]
     )
 
@@ -74,10 +77,14 @@ def test_calcular_indicadores_operacional():
 
 
 def test_calcular_indicadores_banco_usa_contas_diferentes():
-    # banco: lucro = 3.09, PL = 2.08 (e NAO 3.11 / 2.03)
+    # banco: lucro = 3.09, PL = 2.08 (e NAO 3.11 / 2.03); receita = 3.01
     dre = pd.DataFrame(
-        [{"ORDEM_EXERC": "ÚLTIMO", "VERSAO": 1, "CD_CONTA": "3.09",
-          "VL_CONTA": 300.0, "DT_REFER": "2023-12-31", "DT_RECEB": "2024-02-10"}]
+        [
+            {"ORDEM_EXERC": "ÚLTIMO", "VERSAO": 1, "CD_CONTA": "3.09",
+             "VL_CONTA": 300.0, "DT_REFER": "2023-12-31", "DT_RECEB": "2024-02-10"},
+            {"ORDEM_EXERC": "ÚLTIMO", "VERSAO": 1, "CD_CONTA": "3.01",
+             "VL_CONTA": 1500.0, "DT_REFER": "2023-12-31", "DT_RECEB": "2024-02-10"},
+        ]
     )
     bpp = pd.DataFrame(
         [{"ORDEM_EXERC": "ÚLTIMO", "VERSAO": 1, "CD_CONTA": "2.08",

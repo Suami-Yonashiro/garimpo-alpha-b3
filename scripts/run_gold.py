@@ -1,4 +1,4 @@
-"""GOLD — ranking fundamentalista (Graham) do universo.
+"""GOLD — score composto (Graham + Buffett) e ranking do universo.
 
 Rodar:  PYTHONPATH=. uv run python scripts/run_gold.py
 """
@@ -8,12 +8,14 @@ from src.gold import build_gold
 
 def main() -> None:
     gold = build_gold(get_engine())
-    print(f"\nRanking Graham — {len(gold)} acoes\n")
-    cols = ["ranking", "ticker", "setor", "valor_graham", "preco_atual",
-            "margem_seguranca", "classificacao"]
+    print(f"\nRanking por score composto — {len(gold)} acoes\n")
+    cols = ["ranking", "ticker", "setor", "score_final", "z_graham", "z_buffett",
+            "roe", "margem_liquida", "classificacao"]
     vis = gold[cols].copy()
-    vis["margem_seguranca"] = (vis["margem_seguranca"] * 100).round(1)
-    vis["valor_graham"] = vis["valor_graham"].round(2)
+    for c in ["score_final", "z_graham", "z_buffett"]:
+        vis[c] = vis[c].round(2)
+    for c in ["roe", "margem_liquida"]:
+        vis[c] = (vis[c] * 100).round(1)
     print(vis.to_string(index=False))
 
 
