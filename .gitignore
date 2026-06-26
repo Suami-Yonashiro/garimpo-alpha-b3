@@ -1,0 +1,34 @@
+# ===== Segredos (NUNCA versionar) =====
+.env
+.env.local
+*.key
+*.pem
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.python-version
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# ===== Dados brutos / cache local (não vão pro Git) =====
+data/
+*.zip
+*.parquet
+*.csv
+!docs/**/*.csv          # exceção: CSVs de exemplo dentro de docs/, se houver
+
+# ===== dbt =====
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+
+# ===== Sistema operacional / IDE =====
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

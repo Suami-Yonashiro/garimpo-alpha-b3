@@ -1,0 +1,29 @@
+name: CI
+
+# Roda a cada push e pull request: garante que o codigo importa, passa no
+# lint (ruff) e nos testes (pytest) antes de qualquer merge.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  qualidade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Configurar Python 3.11
+        run: uv python install 3.11
+
+      - name: Instalar dependencias (nucleo + dev)
+        run: uv sync --extra dev
+
+      - name: Lint (ruff)
+        run: uv run ruff check .
+
+      - name: Testes (pytest)
+        run: uv run pytest -q

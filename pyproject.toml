@@ -1,0 +1,40 @@
+[project]
+name = "garimpo-alpha-b3"
+version = "0.1.0"
+description = "Otimizador de carteira de acoes data-driven para a B3 (IBrX-100)."
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+
+# --- Dependencias SEMPRE necessarias (nucleo) ---
+dependencies = [
+    "pandas>=2.0",
+    "numpy>=1.26",
+    "requests>=2.31",
+    "python-dotenv>=1.0",
+    "pydantic-settings>=2.0",   # config tipada lida do .env
+    "sqlalchemy>=2.0",          # acesso ao Postgres do Supabase
+    "psycopg2-binary>=2.9",     # driver Postgres
+]
+
+# --- Dependencias por fase (instale so quando chegar a hora) ---
+# Ex.: uv sync --extra ingestion   /   uv sync --extra ml
+[project.optional-dependencies]
+ingestion   = ["yfinance>=0.2", "curl-cffi>=0.7", "python-bcb>=0.3"]
+quality     = ["pandera>=0.18"]
+ml          = ["scikit-learn>=1.4", "xgboost>=2.0", "lightgbm>=4.0", "shap>=0.44", "scipy>=1.11"]
+dashboard   = ["streamlit>=1.30", "plotly>=5.18"]
+orchestration = ["prefect>=2.16"]
+transform   = ["dbt-postgres>=1.7"]
+dev         = ["ruff>=0.4", "pytest>=8.0"]
+
+# uv: tratar como "projeto virtual" (nao empacotar/publicar) — so gerencia o venv.
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]          # permite "from src... import ..." nos testes
+testpaths = ["tests"]
