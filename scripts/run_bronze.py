@@ -14,8 +14,10 @@ from src.universo import UNIVERSO
 
 ANO = 2023
 ARQUIVOS = [
-    ("DRE_con", "bronze_cvm_dre"),
-    ("BPP_con", "bronze_cvm_bpp"),
+    ("DRE_con", "bronze_cvm_dre"),        # resultado (lucro, receita, EBIT)
+    ("BPP_con", "bronze_cvm_bpp"),         # passivo (PL, divida)
+    ("BPA_con", "bronze_cvm_bpa"),         # ativo (caixa)
+    ("DFC_MI_con", "bronze_cvm_dfc"),      # fluxo de caixa (D&A, FCO)
     ("composicao_capital", "bronze_cvm_acoes"),
 ]
 

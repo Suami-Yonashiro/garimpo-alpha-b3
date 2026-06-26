@@ -14,6 +14,13 @@ TERMOS_LUCRO = ("Lucro", "Consolidado do Per")   # Lucro/Prejuizo Consolidado do
 TERMOS_PL = ("Patrim", "quido Consolidado")       # Patrimonio Liquido Consolidado
 CD_RECEITA = "3.01"
 
+# --- contas para EV/EBITDA (so empresas operacionais) ---
+CD_EBIT = "3.05"               # Resultado Antes do Result. Financeiro e Tributos
+CD_CAIXA = "1.01.01"           # Caixa e Equivalentes de Caixa (BPA)
+CD_DIVIDA = ("2.01.04", "2.02.01")  # Emprestimos e Financiamentos (circ. + nao circ.)
+TERMO_DA = "Deprecia"          # D&A na DFC: a linha de D&A contem 'Deprecia'
+                               # (as '6.03.x Amortizacoes de financiamento' nao tem)
+
 
 def dedup_ultimo(df: pd.DataFrame) -> pd.DataFrame:
     """Mantem so o exercicio corrente (ULTIMO) e a versao mais recente.
@@ -60,6 +67,37 @@ def valor_por_descricao(df: pd.DataFrame, *termos: str) -> float:
 _LIMIAR_UNIDADES = 1e8
 
 
+def valor_conta_opcional(df: pd.DataFrame, cd_conta: str, default: float = 0.0) -> float:
+    """Como valor_conta, mas retorna um default se a conta nao existir."""
+    linha = df[df["CD_CONTA"] == cd_conta]
+    return float(linha["VL_CONTA"].iloc[0]) if not linha.empty else default
+
+
+def depreciacao_amortizacao(dfc: pd.DataFrame) -> float:
+    """Soma a(s) linha(s) de D&A dentro do fluxo operacional (6.01) da DFC.
+
+    Casa por 'Deprecia' (a linha de D&A tem; as '6.03 Amortizacoes de financiamento'
+    nao tem). Restringe a 6.01 para garantir que e add-back do caixa operacional.
+    """
+    mask = dfc["CD_CONTA"].str.startswith("6.01") & dfc["DS_CONTA"].str.contains(
+        TERMO_DA, case=False, na=False
+    )
+    return float(dfc.loc[mask, "VL_CONTA"].sum())
+
+
+def indicadores_ev(dre: pd.DataFrame, bpp: pd.DataFrame, bpa: pd.DataFrame,
+                   dfc: pd.DataFrame) -> dict:
+    """EBITDA e divida liquida (entradas do EV/EBITDA). So faz sentido p/ operacionais."""
+    ebit = valor_conta(dre, CD_EBIT)
+    da = depreciacao_amortizacao(dfc)
+    divida_bruta = sum(valor_conta_opcional(bpp, cd) for cd in CD_DIVIDA)
+    caixa = valor_conta_opcional(bpa, CD_CAIXA)
+    return {
+        "ebitda_mil": ebit + da,
+        "divida_liquida_mil": divida_bruta - caixa,
+    }
+
+
 def acoes_em_circulacao(acoes: pd.DataFrame) -> float:
     """Acoes em circulacao (totais - tesouraria), padronizadas em MILHARES.
 
@@ -74,9 +112,14 @@ def acoes_em_circulacao(acoes: pd.DataFrame) -> float:
 
 
 def calcular_indicadores(
-    dre: pd.DataFrame, bpp: pd.DataFrame, acoes: pd.DataFrame, ticker: str, setor: str
+    dre: pd.DataFrame, bpp: pd.DataFrame, acoes: pd.DataFrame, ticker: str, setor: str,
+    bpa: pd.DataFrame | None = None, dfc: pd.DataFrame | None = None,
 ) -> dict:
-    """Aplica dedup e calcula LPA e VPA, resolvendo contas por descricao."""
+    """Aplica dedup e calcula LPA e VPA, resolvendo contas por descricao.
+
+    Para empresas operacionais tambem calcula EBITDA e divida liquida (entradas
+    do EV/EBITDA). Bancos nao tem EBIT/EBITDA -> esses campos ficam None.
+    """
     dre_u = dedup_ultimo(dre)
     bpp_u = dedup_ultimo(bpp)
 
@@ -85,8 +128,7 @@ def calcular_indicadores(
     receita = valor_conta(dre_u, CD_RECEITA)              # em mil R$
     qt_acoes = acoes_em_circulacao(acoes)                 # em milhares
 
-    # LPA/VPA: as unidades 'mil' se cancelam -> R$ por acao.
-    return {
+    indicadores = {
         "ticker": ticker,
         "setor": setor,
         "cnpj": acoes.iloc[0]["CNPJ_CIA"],
@@ -96,15 +138,25 @@ def calcular_indicadores(
         "patrimonio_liquido_mil": patrimonio,
         "receita_mil": receita,
         "acoes_circulacao_mil": qt_acoes,
-        "lpa": lucro / qt_acoes,
+        "lpa": lucro / qt_acoes,   # 'mil' se cancela -> R$ por acao
         "vpa": patrimonio / qt_acoes,
+        "ebitda_mil": None,
+        "divida_liquida_mil": None,
     }
+
+    # EV/EBITDA so para operacionais (banco nao tem EBIT)
+    if setor == "operacional" and bpa is not None and dfc is not None:
+        indicadores.update(indicadores_ev(dre_u, bpp_u, dedup_ultimo(bpa), dedup_ultimo(dfc)))
+
+    return indicadores
 
 
 def build_silver(engine, universo: dict) -> pd.DataFrame:
     """Le o Bronze do banco, calcula indicadores por empresa e grava a Silver."""
     dre = pd.read_sql("select * from bronze_cvm_dre", engine)
     bpp = pd.read_sql("select * from bronze_cvm_bpp", engine)
+    bpa = pd.read_sql("select * from bronze_cvm_bpa", engine)
+    dfc = pd.read_sql("select * from bronze_cvm_dfc", engine)
     acoes = pd.read_sql("select * from bronze_cvm_acoes", engine)
 
     linhas = []
@@ -116,6 +168,8 @@ def build_silver(engine, universo: dict) -> pd.DataFrame:
                 acoes[acoes["ticker"] == ticker],
                 ticker=ticker,
                 setor=info["setor"],
+                bpa=bpa[bpa["ticker"] == ticker],
+                dfc=dfc[dfc["ticker"] == ticker],
             )
             linhas.append(ind)
         except (ValueError, IndexError) as exc:
