@@ -19,8 +19,8 @@ CORES = {"Buy": "#16a34a", "Hold": "#d97706", "Avoid": "#dc2626", "N/A": "#6b728
 
 st.title("📊 Garimpo Alpha B3")
 st.caption(
-    "Ranking fundamentalista — score composto (Graham + Buffett + EV/EBITDA, via z-score). "
-    "Projeto educacional; não é recomendação de investimento."
+    "Ranking fundamentalista — score composto (Graham + Buffett + EV/EBITDA + Lynch, "
+    "via z-score). Projeto educacional; não é recomendação de investimento."
 )
 
 
@@ -54,7 +54,7 @@ st.divider()
 # --- Tabela de ranking (por score composto) ---
 vis = gold[
     ["ranking", "ticker", "setor", "score_final", "z_graham", "z_buffett",
-     "z_evebitda", "ev_ebitda", "roe", "classificacao"]
+     "z_evebitda", "z_lynch", "classificacao"]
 ].copy()
 
 
@@ -69,8 +69,7 @@ styled = (
             "z_graham": "{:+.2f}",
             "z_buffett": "{:+.2f}",
             "z_evebitda": "{:+.2f}",
-            "ev_ebitda": "{:.1f}x",
-            "roe": "{:.1%}",
+            "z_lynch": "{:+.2f}",
         },
         na_rep="—",
     )
@@ -79,6 +78,7 @@ st.dataframe(styled, use_container_width=True, hide_index=True)
 
 st.caption(
     "score_final = média ponderada (pesos PRD) dos métodos disponíveis por empresa, "
-    "renormalizados — bancos não têm EV/EBITDA. z = desvios-padrão vs. a média do "
-    "universo (EV/EBITDA invertido: menor múltiplo = melhor). Faltam Lynch e DCF."
+    "renormalizados — bancos não têm EV/EBITDA; cíclicas (que saíram de prejuízo) não "
+    "têm Lynch/PEG. z = desvios-padrão vs. a média do universo (EV/EBITDA e Lynch "
+    "invertidos: menor = melhor). Falta só o DCF."
 )

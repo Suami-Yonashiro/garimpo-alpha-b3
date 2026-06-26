@@ -10,7 +10,8 @@ DISPONIVEIS para ela (pesos renormalizados por linha) — exatamente o que o PRD
 import pandas as pd
 
 # pesos brutos do PRD; renormalizados por linha conforme os metodos disponiveis
-PESOS = {"graham": 0.20, "buffett": 0.30, "evebitda": 0.15}
+# (faltam apenas os 0.20 do DCF para completar os 5 metodos do PRD)
+PESOS = {"graham": 0.20, "buffett": 0.30, "evebitda": 0.15, "lynch": 0.15}
 
 
 def zscore(serie: pd.Series) -> pd.Series:
@@ -29,7 +30,12 @@ def winsorizar(serie: pd.Series, limite: float = 0.01) -> pd.Series:
 
 def _media_ponderada_disponivel(row: pd.Series) -> float:
     """Media ponderada dos sub-scores nao-nulos, com pesos renormalizados."""
-    colunas = {"graham": "z_graham", "buffett": "z_buffett", "evebitda": "z_evebitda"}
+    colunas = {
+        "graham": "z_graham",
+        "buffett": "z_buffett",
+        "evebitda": "z_evebitda",
+        "lynch": "z_lynch",
+    }
     num = den = 0.0
     for metodo, coluna in colunas.items():
         valor = row[coluna]
@@ -54,6 +60,9 @@ def score_composto(df: pd.DataFrame) -> pd.DataFrame:
 
     # sub-score EV/EBITDA: MENOR multiplo = melhor -> inverte o sinal
     out["z_evebitda"] = -zscore(winsorizar(out["ev_ebitda"]))
+
+    # sub-score Lynch: MENOR PEG = melhor -> inverte o sinal
+    out["z_lynch"] = -zscore(winsorizar(out["peg"]))
 
     out["score_final"] = out.apply(_media_ponderada_disponivel, axis=1)
     return out

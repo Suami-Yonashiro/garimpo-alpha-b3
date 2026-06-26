@@ -26,6 +26,7 @@ def _df_base():
             "roe": [0.30, 0.20, 0.10, 0.05],
             "margem_liquida": [0.25, 0.15, 0.08, 0.02],
             "ev_ebitda": [4.0, 8.0, 12.0, np.nan],  # D sem EV/EBITDA (ex.: banco)
+            "peg": [0.5, 1.0, 2.0, 1.2],
         }
     )
 
@@ -44,12 +45,11 @@ def test_ev_ebitda_menor_e_melhor():
 
 
 def test_renormaliza_quando_falta_metodo():
-    # D nao tem EV/EBITDA: score_final deve usar so graham+buffett (sem virar NaN)
+    # D nao tem EV/EBITDA (NaN); usa graham+buffett+lynch, renormalizados, sem virar NaN
     out = score_composto(_df_base())
-    score_d = out.loc[3, "score_final"]
-    esperado = (
-        PESOS["graham"] * out.loc[3, "z_graham"]
-        + PESOS["buffett"] * out.loc[3, "z_buffett"]
-    ) / (PESOS["graham"] + PESOS["buffett"])
-    assert not math.isnan(score_d)
-    assert math.isclose(score_d, esperado, rel_tol=1e-9)
+    d = out.loc[3]
+    disponiveis = ["graham", "buffett", "lynch"]
+    num = sum(PESOS[m] * d[f"z_{m}"] for m in disponiveis)
+    den = sum(PESOS[m] for m in disponiveis)
+    assert not math.isnan(d["score_final"])
+    assert math.isclose(d["score_final"], num / den, rel_tol=1e-9)
