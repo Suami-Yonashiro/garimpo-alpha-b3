@@ -14,6 +14,9 @@ from src.fundamental.score import score_composto
 
 def build_gold(engine) -> pd.DataFrame:
     silver = pd.read_sql("select * from silver_fundamentals", engine)
+    # o ranking atual usa o ano mais recente de cada empresa
+    if "ano" in silver.columns:
+        silver = silver.loc[silver.groupby("ticker")["ano"].idxmax()]
     precos = precos_atuais_yf(silver["ticker"].tolist())
 
     linhas = []

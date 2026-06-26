@@ -126,20 +126,21 @@ def calcular_indicadores(
     lucro = valor_por_descricao(dre_u, *TERMOS_LUCRO)    # em mil R$
     patrimonio = valor_por_descricao(bpp_u, *TERMOS_PL)   # em mil R$
     receita = valor_conta(dre_u, CD_RECEITA)              # em mil R$
-    qt_acoes = acoes_em_circulacao(acoes)                 # em milhares
+    # nº de acoes pode faltar em anos antigos (arquivo nao publicado) -> LPA/VPA None
+    qt_acoes = acoes_em_circulacao(acoes) if acoes is not None and not acoes.empty else None
 
     indicadores = {
         "ticker": ticker,
         "setor": setor,
-        "cnpj": acoes.iloc[0]["CNPJ_CIA"],
+        "cnpj": dre_u["CNPJ_CIA"].iloc[0],
         "dt_refer": dre_u["DT_REFER"].iloc[0],
         "dt_receb": dre_u["DT_RECEB"].iloc[0],   # ancora point-in-time
         "lucro_liquido_mil": lucro,
         "patrimonio_liquido_mil": patrimonio,
         "receita_mil": receita,
         "acoes_circulacao_mil": qt_acoes,
-        "lpa": lucro / qt_acoes,   # 'mil' se cancela -> R$ por acao
-        "vpa": patrimonio / qt_acoes,
+        "lpa": lucro / qt_acoes if qt_acoes else None,   # 'mil' se cancela -> R$/acao
+        "vpa": patrimonio / qt_acoes if qt_acoes else None,
         "ebitda_mil": None,
         "divida_liquida_mil": None,
     }
@@ -159,21 +160,26 @@ def build_silver(engine, universo: dict) -> pd.DataFrame:
     dfc = pd.read_sql("select * from bronze_cvm_dfc", engine)
     acoes = pd.read_sql("select * from bronze_cvm_acoes", engine)
 
+    def do_ano(df: pd.DataFrame, ticker: str, ano: int) -> pd.DataFrame:
+        return df[(df["ticker"] == ticker) & (df["ano"] == ano)]
+
     linhas = []
     for ticker, info in universo.items():
-        try:
-            ind = calcular_indicadores(
-                dre[dre["ticker"] == ticker],
-                bpp[bpp["ticker"] == ticker],
-                acoes[acoes["ticker"] == ticker],
-                ticker=ticker,
-                setor=info["setor"],
-                bpa=bpa[bpa["ticker"] == ticker],
-                dfc=dfc[dfc["ticker"] == ticker],
-            )
-            linhas.append(ind)
-        except (ValueError, IndexError) as exc:
-            print(f"  [aviso] {ticker} pulado: {exc}")
+        anos = sorted(dre.loc[dre["ticker"] == ticker, "ano"].unique())
+        for ano in anos:
+            try:
+                ind = calcular_indicadores(
+                    do_ano(dre, ticker, ano),
+                    do_ano(bpp, ticker, ano),
+                    do_ano(acoes, ticker, ano),
+                    ticker=ticker, setor=info["setor"],
+                    bpa=do_ano(bpa, ticker, ano),
+                    dfc=do_ano(dfc, ticker, ano),
+                )
+                ind["ano"] = ano
+                linhas.append(ind)
+            except (ValueError, IndexError) as exc:
+                print(f"  [aviso] {ticker}/{ano} pulado: {exc}")
 
     silver = pd.DataFrame(linhas)
     silver.to_sql("silver_fundamentals", engine, if_exists="replace", index=False)

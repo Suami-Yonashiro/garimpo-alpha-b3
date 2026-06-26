@@ -18,24 +18,24 @@ def _dre_fake():
     return pd.DataFrame(
         [
             # exercicio anterior (deve ser descartado pelo dedup)
-            {"ORDEM_EXERC": "PENÚLTIMO", "VERSAO": 1, "CD_CONTA": "3.11",
+            {"CNPJ_CIA": "00", "ORDEM_EXERC": "PENÚLTIMO", "VERSAO": 1, "CD_CONTA": "3.11",
              "DS_CONTA": _DS_LUCRO, "VL_CONTA": 100.0,
              "DT_REFER": "2022-12-31", "DT_RECEB": "2023-03-01"},
             # versao antiga (deve perder para a v2)
-            {"ORDEM_EXERC": "ÚLTIMO", "VERSAO": 1, "CD_CONTA": "3.11",
+            {"CNPJ_CIA": "00", "ORDEM_EXERC": "ÚLTIMO", "VERSAO": 1, "CD_CONTA": "3.11",
              "DS_CONTA": _DS_LUCRO, "VL_CONTA": 180.0,
              "DT_REFER": "2023-12-31", "DT_RECEB": "2024-02-20"},
             # versao mais recente (deve vencer)
-            {"ORDEM_EXERC": "ÚLTIMO", "VERSAO": 2, "CD_CONTA": "3.11",
+            {"CNPJ_CIA": "00", "ORDEM_EXERC": "ÚLTIMO", "VERSAO": 2, "CD_CONTA": "3.11",
              "DS_CONTA": _DS_LUCRO, "VL_CONTA": 200.0,
              "DT_REFER": "2023-12-31", "DT_RECEB": "2024-03-15"},
             # ANO ANTERIOR com a MESMA versao da vencedora: nao pode vazar
             # ('PENÚLTIMO' contem 'ÚLTIMO' -> pega o bug do contains ingênuo)
-            {"ORDEM_EXERC": "PENÚLTIMO", "VERSAO": 2, "CD_CONTA": "3.11",
+            {"CNPJ_CIA": "00", "ORDEM_EXERC": "PENÚLTIMO", "VERSAO": 2, "CD_CONTA": "3.11",
              "DS_CONTA": _DS_LUCRO, "VL_CONTA": 999.0,
              "DT_REFER": "2022-12-31", "DT_RECEB": "2023-03-01"},
             # receita (3.01), necessaria para a margem liquida
-            {"ORDEM_EXERC": "ÚLTIMO", "VERSAO": 2, "CD_CONTA": "3.01",
+            {"CNPJ_CIA": "00", "ORDEM_EXERC": "ÚLTIMO", "VERSAO": 2, "CD_CONTA": "3.01",
              "DS_CONTA": _DS_RECEITA, "VL_CONTA": 1000.0,
              "DT_REFER": "2023-12-31", "DT_RECEB": "2024-03-15"},
         ]
@@ -103,10 +103,10 @@ def test_resolve_por_descricao_independe_do_codigo():
     # descricao deve achar mesmo assim, sem mapa de codigo por setor.
     dre = pd.DataFrame(
         [
-            {"ORDEM_EXERC": "ÚLTIMO", "VERSAO": 1, "CD_CONTA": "3.11",
+            {"CNPJ_CIA": "00", "ORDEM_EXERC": "ÚLTIMO", "VERSAO": 1, "CD_CONTA": "3.11",
              "DS_CONTA": "Lucro ou Prejuízo Líquido Consolidado do Período",
              "VL_CONTA": 300.0, "DT_REFER": "2023-12-31", "DT_RECEB": "2024-02-10"},
-            {"ORDEM_EXERC": "ÚLTIMO", "VERSAO": 1, "CD_CONTA": "3.01",
+            {"CNPJ_CIA": "00", "ORDEM_EXERC": "ÚLTIMO", "VERSAO": 1, "CD_CONTA": "3.01",
              "DS_CONTA": "Receitas da Intermediação Financeira",
              "VL_CONTA": 1500.0, "DT_REFER": "2023-12-31", "DT_RECEB": "2024-02-10"},
         ]

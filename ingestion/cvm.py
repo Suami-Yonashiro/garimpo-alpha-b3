@@ -45,6 +45,19 @@ def _indice_dt_receb(ano: int, cnpj: str) -> pd.DataFrame:
     return idx[["DT_REFER", "VERSAO", "DT_RECEB"]].drop_duplicates()
 
 
+def carregar_demonstrativo_ano(ano: int, sufixo: str) -> pd.DataFrame:
+    """Le um demonstrativo INTEIRO de um ano (todas as empresas), ja com DT_RECEB.
+
+    Mais eficiente para ingestao multi-ano: le o CSV uma vez por (ano, sufixo) e
+    a filtragem por empresa fica a cargo de quem chama.
+    """
+    zp = baixar_dfp_zip(ano)
+    df = _ler_csv_do_zip(zp, f"dfp_cia_aberta_{sufixo}_{ano}.csv")
+    idx = _ler_csv_do_zip(zp, f"dfp_cia_aberta_{ano}.csv")
+    idx = idx[["CNPJ_CIA", "DT_REFER", "VERSAO", "DT_RECEB"]].drop_duplicates()
+    return df.merge(idx, on=["CNPJ_CIA", "DT_REFER", "VERSAO"], how="left")
+
+
 def carregar_arquivo(ano: int, sufixo: str, cnpj: str) -> pd.DataFrame:
     """Le um demonstrativo da DFP, filtra a empresa e anexa a DT_RECEB.
 
