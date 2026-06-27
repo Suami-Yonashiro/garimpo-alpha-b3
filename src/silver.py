@@ -17,6 +17,7 @@ CD_RECEITA = "3.01"
 # --- contas para EV/EBITDA (so empresas operacionais) ---
 CD_EBIT = "3.05"               # Resultado Antes do Result. Financeiro e Tributos
 CD_CAIXA = "1.01.01"           # Caixa e Equivalentes de Caixa (BPA)
+CD_FCO = "6.01"                # Caixa Liquido das Atividades Operacionais (DFC) - p/ DCF
 CD_DIVIDA = ("2.01.04", "2.02.01")  # Emprestimos e Financiamentos (circ. + nao circ.)
 TERMO_DA = "Deprecia"          # D&A na DFC: a linha de D&A contem 'Deprecia'
                                # (as '6.03.x Amortizacoes de financiamento' nao tem)
@@ -95,6 +96,7 @@ def indicadores_ev(dre: pd.DataFrame, bpp: pd.DataFrame, bpa: pd.DataFrame,
     return {
         "ebitda_mil": ebit + da,
         "divida_liquida_mil": divida_bruta - caixa,
+        "fco_mil": valor_conta_opcional(dfc, CD_FCO, default=None),  # p/ DCF
     }
 
 
@@ -143,9 +145,10 @@ def calcular_indicadores(
         "vpa": patrimonio / qt_acoes if qt_acoes else None,
         "ebitda_mil": None,
         "divida_liquida_mil": None,
+        "fco_mil": None,
     }
 
-    # EV/EBITDA so para operacionais (banco nao tem EBIT)
+    # EV/EBITDA e DCF so para operacionais (banco nao tem EBIT/FCO-valuation padrao)
     if setor == "operacional" and bpa is not None and dfc is not None:
         indicadores.update(indicadores_ev(dre_u, bpp_u, dedup_ultimo(bpa), dedup_ultimo(dfc)))
 

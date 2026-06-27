@@ -5,7 +5,9 @@ indicadores de cada metodo e combina tudo num score_final via z-score.
 """
 import pandas as pd
 
+from ingestion.bcb import selic_atual
 from ingestion.precos import precos_atuais_yf
+from src.fundamental import dcf
 from src.fundamental.buffett import margem_liquida, roe
 from src.fundamental.ev_ebitda import enterprise_value, ev_ebitda
 from src.fundamental.graham import classificar, margem_seguranca, valor_intrinseco
@@ -13,25 +15,27 @@ from src.fundamental.lynch import crescimento_lucro, peg
 from src.fundamental.score import score_composto
 
 
-def _crescimentos_por_ticker(silver: pd.DataFrame) -> dict[str, float | None]:
-    """CAGR de lucro de cada empresa, a partir do historico completo."""
-    crescimentos = {}
+def _cagr_por_ticker(silver: pd.DataFrame, coluna: str) -> dict[str, float | None]:
+    """CAGR de uma metrica (ex.: lucro, FCO) por empresa, do historico completo."""
+    saida = {}
     for ticker, g in silver.groupby("ticker"):
         g = g.sort_values("ano")
-        crescimentos[ticker] = crescimento_lucro(
-            g["lucro_liquido_mil"].tolist(), g["ano"].tolist()
-        )
-    return crescimentos
+        saida[ticker] = crescimento_lucro(g[coluna].tolist(), g["ano"].tolist())
+    return saida
 
 
 def build_gold(engine) -> pd.DataFrame:
     silver = pd.read_sql("select * from silver_fundamentals", engine)
 
-    # crescimento (Lynch) usa o historico; o ranking usa o ano mais recente
-    crescimentos = _crescimentos_por_ticker(silver) if "ano" in silver.columns else {}
+    # crescimentos usam o historico; o ranking usa o ano mais recente
     if "ano" in silver.columns:
+        cresc_lucro = _cagr_por_ticker(silver, "lucro_liquido_mil")
+        cresc_fco = _cagr_por_ticker(silver, "fco_mil")
         silver = silver.loc[silver.groupby("ticker")["ano"].idxmax()]
+    else:
+        cresc_lucro = cresc_fco = {}
 
+    selic = selic_atual()  # taxa livre de risco para o WACC do DCF
     precos = precos_atuais_yf(silver["ticker"].tolist())
 
     linhas = []
@@ -43,7 +47,13 @@ def build_gold(engine) -> pd.DataFrame:
         market_cap = preco * row["acoes_circulacao_mil"] if preco else None
         ev = enterprise_value(market_cap, row["divida_liquida_mil"])
 
-        crescimento = crescimentos.get(row["ticker"])
+        crescimento = cresc_lucro.get(row["ticker"])
+
+        # DCF: valor justo por acao -> margem (como no Graham)
+        valor_dcf = dcf.valor_intrinseco(
+            row["fco_mil"], cresc_fco.get(row["ticker"]), selic,
+            row["divida_liquida_mil"], row["acoes_circulacao_mil"],
+        )
 
         linhas.append(
             {
@@ -63,6 +73,9 @@ def build_gold(engine) -> pd.DataFrame:
                 # Lynch
                 "crescimento_lucro": crescimento,
                 "peg": peg(preco, row["lpa"], crescimento),
+                # DCF
+                "valor_dcf": valor_dcf,
+                "margem_dcf": margem_seguranca(valor_dcf, preco),
             }
         )
 

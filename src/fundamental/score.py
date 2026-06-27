@@ -9,9 +9,9 @@ DISPONIVEIS para ela (pesos renormalizados por linha) — exatamente o que o PRD
 """
 import pandas as pd
 
-# pesos brutos do PRD; renormalizados por linha conforme os metodos disponiveis
-# (faltam apenas os 0.20 do DCF para completar os 5 metodos do PRD)
-PESOS = {"graham": 0.20, "buffett": 0.30, "evebitda": 0.15, "lynch": 0.15}
+# pesos do PRD (secao 6) — 5 metodos, somam 1.00.
+# Renormalizados por linha conforme os metodos disponiveis para cada empresa.
+PESOS = {"buffett": 0.30, "graham": 0.20, "dcf": 0.20, "evebitda": 0.15, "lynch": 0.15}
 
 
 def zscore(serie: pd.Series) -> pd.Series:
@@ -35,6 +35,7 @@ def _media_ponderada_disponivel(row: pd.Series) -> float:
         "buffett": "z_buffett",
         "evebitda": "z_evebitda",
         "lynch": "z_lynch",
+        "dcf": "z_dcf",
     }
     num = den = 0.0
     for metodo, coluna in colunas.items():
@@ -63,6 +64,9 @@ def score_composto(df: pd.DataFrame) -> pd.DataFrame:
 
     # sub-score Lynch: MENOR PEG = melhor -> inverte o sinal
     out["z_lynch"] = -zscore(winsorizar(out["peg"]))
+
+    # sub-score DCF: maior margem (valor justo vs preco) = melhor
+    out["z_dcf"] = zscore(winsorizar(out["margem_dcf"]))
 
     out["score_final"] = out.apply(_media_ponderada_disponivel, axis=1)
     return out

@@ -19,8 +19,8 @@ CORES = {"Buy": "#16a34a", "Hold": "#d97706", "Avoid": "#dc2626", "N/A": "#6b728
 
 st.title("📊 Garimpo Alpha B3")
 st.caption(
-    "Ranking fundamentalista — score composto (Graham + Buffett + EV/EBITDA + Lynch, "
-    "via z-score). Projeto educacional; não é recomendação de investimento."
+    "Ranking fundamentalista — score composto dos 5 métodos (Graham, Buffett, "
+    "EV/EBITDA, Lynch, DCF) via z-score. Projeto educacional; não é recomendação."
 )
 
 
@@ -54,7 +54,7 @@ st.divider()
 # --- Tabela de ranking (por score composto) ---
 vis = gold[
     ["ranking", "ticker", "setor", "score_final", "z_graham", "z_buffett",
-     "z_evebitda", "z_lynch", "classificacao"]
+     "z_evebitda", "z_lynch", "z_dcf", "classificacao"]
 ].copy()
 
 
