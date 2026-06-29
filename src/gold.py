@@ -13,6 +13,7 @@ from src.fundamental.ev_ebitda import enterprise_value, ev_ebitda
 from src.fundamental.graham import classificar, margem_seguranca, valor_intrinseco
 from src.fundamental.lynch import crescimento_lucro, peg
 from src.fundamental.score import score_composto
+from src.fundamental.selos import aplicar_selos
 
 
 def _cagr_por_ticker(silver: pd.DataFrame, coluna: str) -> dict[str, float | None]:
@@ -80,6 +81,7 @@ def build_gold(engine) -> pd.DataFrame:
         )
 
     gold = score_composto(pd.DataFrame(linhas))
+    gold = aplicar_selos(gold)
     gold = gold.sort_values("score_final", ascending=False, na_position="last")
     gold.insert(0, "ranking", range(1, len(gold) + 1))
     gold.to_sql("gold_fundamental_scores", engine, if_exists="replace", index=False)

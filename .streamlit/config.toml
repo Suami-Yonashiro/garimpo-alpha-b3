@@ -1,0 +1,11 @@
+# Tema do dashboard (PRD secao 12): dark mode + 1 cor de destaque (verde fintech).
+[theme]
+base = "dark"
+primaryColor = "#16C784"               # verde esmeralda — destaque/oportunidade
+backgroundColor = "#0B0F14"            # fundo escuro profundo
+secondaryBackgroundColor = "#161B22"   # cards, tabela, sidebar
+textColor = "#E6EDF3"
+font = "sans serif"
+
+[browser]
+gatherUsageStats = false

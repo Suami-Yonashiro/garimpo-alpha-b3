@@ -39,21 +39,31 @@ if gold.empty:
     st.warning("Gold vazia. Rode os scripts run_bronze/silver/gold antes.")
     st.stop()
 
-# --- KPIs ---
-n_total = len(gold)
-n_buy = int((gold["classificacao"] == "Buy").sum())
-topo = gold.iloc[0]
+# --- selos (✅ fundamentos fortes, 💎 subvalorizada) ---
+def montar_selos(row: pd.Series) -> str:
+    s = []
+    if row.get("selo_fundamentos"):
+        s.append("✅")
+    if row.get("selo_subvalorizada"):
+        s.append("💎")
+    return " ".join(s)
 
-c1, c2, c3 = st.columns(3)
-c1.metric("Ações analisadas", n_total)
-c2.metric("Oportunidades (Buy)", n_buy)
-c3.metric("Top do ranking", f"{topo['ticker']}  (score {topo['score_final']:.2f})")
+
+gold["selos"] = gold.apply(montar_selos, axis=1)
+
+# --- KPIs ---
+topo = gold.iloc[0]
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("Ações analisadas", len(gold))
+c2.metric("Oportunidades (Buy)", int((gold["classificacao"] == "Buy").sum()))
+c3.metric("Subvalorizadas 💎", int(gold["selo_subvalorizada"].sum()))
+c4.metric("Top do ranking", f"{topo['ticker']}", f"score {topo['score_final']:+.2f}")
 
 st.divider()
 
 # --- Tabela de ranking (por score composto) ---
 vis = gold[
-    ["ranking", "ticker", "setor", "score_final", "z_graham", "z_buffett",
+    ["ranking", "ticker", "setor", "selos", "score_final", "z_graham", "z_buffett",
      "z_evebitda", "z_lynch", "z_dcf", "classificacao"]
 ].copy()
 
@@ -62,23 +72,28 @@ def colorir_classe(valor: str) -> str:
     return f"color: {CORES.get(valor, '#888')}; font-weight: 700"
 
 
+def colorir_score(valor: float) -> str:
+    if pd.isna(valor):
+        return ""
+    return f"color: {'#16C784' if valor >= 0 else '#dc2626'}; font-weight: 700"
+
+
 styled = (
-    vis.style.map(colorir_classe, subset=["classificacao"]).format(
-        {
-            "score_final": "{:+.2f}",
-            "z_graham": "{:+.2f}",
-            "z_buffett": "{:+.2f}",
-            "z_evebitda": "{:+.2f}",
-            "z_lynch": "{:+.2f}",
-        },
+    vis.style
+    .map(colorir_classe, subset=["classificacao"])
+    .map(colorir_score, subset=["score_final"])
+    .format(
+        {c: "{:+.2f}" for c in
+         ["score_final", "z_graham", "z_buffett", "z_evebitda", "z_lynch", "z_dcf"]},
         na_rep="—",
     )
 )
 st.dataframe(styled, use_container_width=True, hide_index=True)
 
 st.caption(
-    "score_final = média ponderada (pesos PRD) dos métodos disponíveis por empresa, "
-    "renormalizados — bancos não têm EV/EBITDA; cíclicas (que saíram de prejuízo) não "
-    "têm Lynch/PEG. z = desvios-padrão vs. a média do universo (EV/EBITDA e Lynch "
-    "invertidos: menor = melhor). Falta só o DCF."
+    "**Selos:** ✅ fundamentos fortes (score no topo) · 💎 subvalorizada (preço < valor justo). "
+    "📈 ML e 🛡️ risco chegam nas Camadas 2 e 3.  ·  "
+    "score_final = média ponderada (pesos do PRD) dos métodos disponíveis por empresa, "
+    "renormalizados — bancos não têm EV/EBITDA nem DCF; cíclicas não têm Lynch. "
+    "z = desvios-padrão vs. a média do universo (EV/EBITDA e Lynch invertidos: menor = melhor)."
 )
