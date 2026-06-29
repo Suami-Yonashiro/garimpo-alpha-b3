@@ -5,6 +5,7 @@ usara yfinance (ver docs/02-decisoes-adr.md, ADR-004).
 """
 import time
 
+import pandas as pd
 import requests
 
 _UA = {"User-Agent": "Mozilla/5.0 (garimpo-alpha-b3)"}
@@ -42,6 +43,32 @@ def precos_atuais_yf(tickers: list[str]) -> dict[str, float]:
             if not serie.empty:
                 precos[ticker] = float(serie.iloc[-1])
     return precos
+
+
+def precos_historicos_yf(tickers: list[str], inicio: str = "2012-01-01") -> pd.DataFrame:
+    """Historico diario de fechamento AJUSTADO (yfinance) do universo + Ibovespa.
+
+    Retorna formato longo: colunas ticker, data, close. O Ibovespa entra como
+    ticker 'IBOV' (simbolo ^BVSP) para servir de benchmark no ML/backtest.
+    auto_adjust=True ja ajusta por proventos/desdobramentos (correto p/ retornos).
+    """
+    import yfinance as yf
+
+    simbolos = {f"{t}.SA": t for t in tickers}
+    simbolos["^BVSP"] = "IBOV"
+
+    dados = yf.download(
+        list(simbolos), start=inicio, auto_adjust=True, progress=False
+    )
+    fechamentos = dados["Close"]  # wide: uma coluna por simbolo
+
+    longo = (
+        fechamentos.reset_index()
+        .melt(id_vars="Date", var_name="simbolo", value_name="close")
+        .dropna(subset=["close"])
+    )
+    longo["ticker"] = longo["simbolo"].map(simbolos)
+    return longo[["ticker", "Date", "close"]].rename(columns={"Date": "data"})
 
 
 def precos_atuais_brapi(tickers: list[str]) -> dict[str, float]:
