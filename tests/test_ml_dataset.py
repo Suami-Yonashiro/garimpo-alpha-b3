@@ -29,7 +29,7 @@ def test_target_zero_quando_perde_do_ibov():
     assert (validas["target"] == 0).all()  # acao flat perde do IBOV em alta
 
 
-def test_features_fundamentais_deriva_roe_e_margem():
+def test_features_fundamentais_deriva_ratios():
     silver = pd.DataFrame(
         {
             "ticker": ["X"],
@@ -37,9 +37,15 @@ def test_features_fundamentais_deriva_roe_e_margem():
             "lucro_liquido_mil": [200.0],
             "patrimonio_liquido_mil": [1000.0],
             "receita_mil": [800.0],
+            "ebitda_mil": [240.0],
+            "divida_liquida_mil": [500.0],
+            "fco_mil": [160.0],
         }
     )
     f = features_fundamentais(silver)
-    assert round(f.loc[0, "roe"], 4) == 0.2          # 200/1000
-    assert round(f.loc[0, "margem_liquida"], 4) == 0.25  # 200/800
+    assert round(f.loc[0, "roe"], 4) == 0.2            # 200/1000
+    assert round(f.loc[0, "margem_liquida"], 4) == 0.25   # 200/800
+    assert round(f.loc[0, "margem_ebitda"], 4) == 0.3     # 240/800
+    assert round(f.loc[0, "divida_pl"], 4) == 0.5         # 500/1000
+    assert round(f.loc[0, "fco_receita"], 4) == 0.2       # 160/800
     assert f.loc[0, "dt_receb"] == pd.Timestamp("2023-03-15")

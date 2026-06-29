@@ -10,9 +10,14 @@ DT_RECEB) e o que sustenta a credibilidade do modelo — ver docs/02-decisoes-ad
 """
 import pandas as pd
 
-# fundamentos disponiveis desde 2012 (nao dependem do nº de acoes, que so existe 2020+)
-FEATURES_FUND = ["roe", "margem_liquida"]
+from ingestion.bcb import series_macro
+
 FEATURES_MOMENTUM = ["ret_3m", "ret_6m", "ret_12m"]
+# fundamentos sempre presentes (2012+): roe, margem_liquida.
+# operacionais-only (None p/ bancos -> imputados no pipeline): margem_ebitda, divida_pl, fco_receita.
+FEATURES_FUND = ["roe", "margem_liquida", "margem_ebitda", "divida_pl", "fco_receita"]
+FEATURES_FUND_BASE = ["roe", "margem_liquida"]  # exigidas (nao imputadas)
+FEATURES_MACRO = ["selic", "ipca12", "cambio"]
 
 
 def features_fundamentais(silver: pd.DataFrame) -> pd.DataFrame:
@@ -20,6 +25,9 @@ def features_fundamentais(silver: pd.DataFrame) -> pd.DataFrame:
     s = silver.copy()
     s["roe"] = s["lucro_liquido_mil"] / s["patrimonio_liquido_mil"]
     s["margem_liquida"] = s["lucro_liquido_mil"] / s["receita_mil"]
+    s["margem_ebitda"] = s["ebitda_mil"] / s["receita_mil"]
+    s["divida_pl"] = s["divida_liquida_mil"] / s["patrimonio_liquido_mil"]
+    s["fco_receita"] = s["fco_mil"] / s["receita_mil"]
     s["dt_receb"] = pd.to_datetime(s["dt_receb"])
     return (
         s[["ticker", "dt_receb", *FEATURES_FUND]]
@@ -76,7 +84,17 @@ def build_dataset(engine, horizonte_meses: int = 6) -> pd.DataFrame:
         partes.append(df)
 
     dataset = pd.concat(partes, ignore_index=True)
-    dataset = dataset.dropna(subset=["target", *FEATURES_MOMENTUM, *FEATURES_FUND])
+
+    # macro (mesmo para todas as acoes na data) via as-of
+    macro = series_macro().reset_index(names="data")
+    dataset = pd.merge_asof(
+        dataset.sort_values("data"), macro.sort_values("data"),
+        on="data", direction="backward",
+    )
+
+    # exige features SEMPRE presentes; as operacionais-only ficam NaN p/ o imputador
+    obrigatorias = ["target", *FEATURES_MOMENTUM, *FEATURES_FUND_BASE, *FEATURES_MACRO]
+    dataset = dataset.dropna(subset=obrigatorias)
     dataset["target"] = dataset["target"].astype(int)
     dataset["horizonte_meses"] = horizonte_meses
 

@@ -12,9 +12,9 @@ import pandas as pd
 from sklearn.base import clone
 from sklearn.metrics import accuracy_score, roc_auc_score
 
-from src.ml.dataset import FEATURES_FUND, FEATURES_MOMENTUM
+from src.ml.dataset import FEATURES_FUND, FEATURES_MACRO, FEATURES_MOMENTUM
 
-FEATURES = [*FEATURES_MOMENTUM, *FEATURES_FUND]
+FEATURES = [*FEATURES_MOMENTUM, *FEATURES_FUND, *FEATURES_MACRO]
 
 
 def walk_forward_folds(datas, n_folds: int = 5, embargo_meses: int = 6):
@@ -34,12 +34,18 @@ def walk_forward_folds(datas, n_folds: int = 5, embargo_meses: int = 6):
 
 
 def modelos() -> dict:
-    """Os 3 algoritmos de arvore, com arvores rasas (conservador p/ pouco dado)."""
+    """Os 3 algoritmos de arvore (rasos, conservador) num pipeline com imputador.
+
+    O SimpleImputer (mediana) preenche os fundamentos operacionais ausentes nos
+    bancos. Por estar no pipeline, e ajustado SO no treino de cada fold (sem vazar).
+    """
     from lightgbm import LGBMClassifier
     from sklearn.ensemble import RandomForestClassifier
+    from sklearn.impute import SimpleImputer
+    from sklearn.pipeline import make_pipeline
     from xgboost import XGBClassifier
 
-    return {
+    base = {
         "RandomForest": RandomForestClassifier(
             n_estimators=200, max_depth=4, random_state=42, n_jobs=-1
         ),
@@ -52,6 +58,7 @@ def modelos() -> dict:
             random_state=42, verbose=-1,
         ),
     }
+    return {nome: make_pipeline(SimpleImputer(strategy="median"), m) for nome, m in base.items()}
 
 
 def avaliar_walk_forward(df: pd.DataFrame, n_folds: int = 5, embargo_meses: int = 6) -> pd.DataFrame:
