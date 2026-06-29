@@ -12,7 +12,7 @@ from ingestion.cvm import carregar_demonstrativo_ano
 from src.db import get_engine
 from src.universo import UNIVERSO
 
-ANOS = range(2019, 2024)  # historico (facil de ampliar p/ 2012 quando precisar)
+ANOS = range(2012, 2024)  # historico desde 2012 (base para Lynch/DCF e o ML)
 ARQUIVOS = [
     ("DRE_con", "bronze_cvm_dre"),        # resultado (lucro, receita, EBIT)
     ("BPP_con", "bronze_cvm_bpp"),         # passivo (PL, divida)
