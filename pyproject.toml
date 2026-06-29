@@ -21,7 +21,8 @@ dependencies = [
 [project.optional-dependencies]
 ingestion   = ["yfinance>=0.2", "curl-cffi>=0.7", "python-bcb>=0.3"]
 quality     = ["pandera>=0.18"]
-ml          = ["scikit-learn>=1.4", "xgboost>=2.0", "lightgbm>=4.0", "shap>=0.44", "scipy>=1.11"]
+ml          = ["scikit-learn>=1.4", "xgboost>=2.0", "lightgbm>=4.0", "scipy>=1.11"]
+interpret   = ["shap>=0.44"]   # opcional: pode exigir toolchain de compilacao (numba/llvmlite)
 dashboard   = ["streamlit>=1.30", "plotly>=5.18"]
 orchestration = ["prefect>=2.16"]
 transform   = ["dbt-postgres>=1.7"]
