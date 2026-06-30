@@ -3,97 +3,136 @@
 > ⚠️ **Disclaimer:** projeto **educacional e de portfólio**. Não constitui recomendação de
 > investimento. Resultados passados não garantem resultados futuros.
 
-**Garimpo Alpha B3** é um otimizador de carteira de ações *data-driven* para a B3 que
-"garimpa" oportunidades combinando **três camadas analíticas** sobre uma arquitetura de
-dados moderna (Medallion). De ~50 ações líquidas, entrega um **ranking acionável** que une
-**valor** (fundamentos), **probabilidade** (ML) e **risco** (Monte Carlo) — com total
-transparência sobre como cada número é calculado.
+## O que é, em uma frase
 
-O projeto demonstra, num produto coeso, os três papéis:
+A B3 tem centenas de ações — **olhar uma a uma é inviável**. O **Garimpo Alpha B3** lê os
+dados oficiais de ~50 empresas líquidas e entrega um **ranking objetivo** que responde três
+perguntas que todo investidor faz: a ação é **barata**? a empresa é **boa**? e **qual o
+risco**? Tudo de forma transparente — dá para ver exatamente como cada número foi calculado.
 
-| Papel | O que demonstra |
-|---|---|
-| **Engenheiro de Dados** | Ingestão multi-fonte, arquitetura Bronze/Silver/Gold, dado *point-in-time*, pipeline reprodutível, CI |
-| **Cientista de Dados** | Feature engineering, validação **temporal** honesta (walk-forward), backtest, simulação de Monte Carlo |
-| **Analista de Dados** | Score interpretável, ranking com selos, dashboard com storytelling |
+> Em termos técnicos: um pipeline de dados *end-to-end* que combina **análise
+> fundamentalista**, **machine learning** e **simulação de Monte Carlo**, com um dashboard
+> interativo. Foi construído para demonstrar, num produto único, as competências de
+> **Engenheiro**, **Cientista** e **Analista de Dados**.
 
 ---
 
-## Destaques (resultados reais)
+## Como funciona (em linguagem simples)
 
-- **Backtest 2013–2025** (comprar as top-N do ranking fundamental vs. Ibovespa):
+O projeto organiza os dados em três níveis (arquitetura **Medallion**, padrão de mercado):
 
-  | Carteira | Retorno | Sharpe | Max drawdown | Acerto vs IBOV |
-  |---|--:|--:|--:|--:|
-  | **Top-N (melhores)** | **+1000%** | **0,85** | **−10%** | **73%** |
-  | Bottom-N (piores) | −12% | 0,16 | −77% | — |
-  | Ibovespa | +203% | 0,50 | −28% | — |
+| Nível | O que é | Analogia |
+|---|---|---|
+| **Bronze** | Dado cru, exatamente como veio da fonte | a matéria-prima |
+| **Silver** | Dado limpo e com indicadores calculados (lucro, dívida, margens…) | a matéria beneficiada |
+| **Gold** | O produto final: score, ranking e selos | o produto na prateleira |
 
-  > O *spread* top-vs-bottom mostra que o score fundamental **separa vencedores de
-  > perdedores**. Os retornos absolutos são otimistas por **survivorship bias** (ver
-  > [Limitações](#limitações-honestas)) — por isso o foco é o spread e o risco, não o número bruto.
+Sobre essa base, três camadas de análise:
 
-- **Monte Carlo de valuation:** afirmações probabilísticas, ex. *"PETR4 tem ~100% de chance
-  de estar subvalorizada"* (2.500 cenários variando crescimento e juros).
-- **Honestidade do ML:** o modelo de "superar o índice" tem **AUC ~0,50** (quase aleatório).
-  Isso é **esperado** — prever retorno relativo é dificílimo. A ausência de "acurácia mágica"
-  é a **prova de que a validação temporal está limpa** (sem vazamento). O valor do projeto
-  está no **processo e no backtest**, não em previsão.
-
----
-
-## Arquitetura (Medallion)
+1. **Fundamentos (vale a pena?)** — 5 métodos clássicos (Graham, Buffett, EV/EBITDA, Lynch,
+   DCF) viram um **score único** comparável entre as ações.
+2. **Machine Learning (dá para prever?)** — um modelo tenta prever se a ação supera o
+   Ibovespa. *Spoiler honesto:* quase não dá (e isso é esperado — explico abaixo).
+3. **Monte Carlo (qual o risco?)** — milhares de cenários simulados para estimar **valor
+   justo** e **risco da carteira** (VaR/CVaR).
 
 ```mermaid
 flowchart LR
-    subgraph F[Fontes]
-      CVM[CVM DFP/ITR<br/>fundamentos point-in-time]
-      YF[yfinance<br/>preços históricos]
+    subgraph F[Fontes oficiais]
+      CVM[CVM<br/>balanços]
+      YF[yfinance<br/>preços]
       BR[brapi<br/>cotação]
-      BCB[BCB/SGS<br/>SELIC, IPCA, câmbio]
+      BCB[Banco Central<br/>SELIC, IPCA, câmbio]
     end
     F --> B[(Bronze<br/>dado cru)]
     B --> S[(Silver<br/>limpo + indicadores)]
-    S --> G[(Gold<br/>score, selos, meta)]
-    S --> ML[ML: dataset point-in-time<br/>walk-forward + backtest]
-    S --> MC[Monte Carlo<br/>valuation + risco]
-    G --> D[Dashboard Streamlit]
+    S --> G[(Gold<br/>score + selos)]
+    S --> ML[Machine Learning<br/>backtest]
+    S --> MC[Monte Carlo<br/>valor + risco]
+    G --> D[Dashboard]
     ML --> D
     MC --> D
 ```
 
-As três camadas analíticas:
-1. **Fundamentalista** — 5 métodos (Graham, Buffett, EV/EBITDA, Lynch, DCF) padronizados por
-   **z-score** e combinados num score (pesos do PRD, renormalizados por método disponível).
-2. **Preditiva (ML)** — features point-in-time (fundamentos via `DT_RECEB` + momentum + macro),
-   target binário "superou o IBOV?", **validação walk-forward com embargo** (nunca k-fold).
-3. **Monte Carlo** — distribuição de valor justo (P5/P50/P95 + prob. de subvalorização) e de
-   risco de carteira (VaR/CVaR/drawdown).
+---
+
+## O que cada papel fez aqui (vs. o mercado)
+
+Este projeto foi desenhado para mostrar, na prática, as três funções de uma equipe de dados.
+
+### 🔧 Engenheiro de Dados
+*No mercado:* constrói e mantém os **pipelines** que levam dados de várias fontes até um
+formato confiável e analisável — garantindo qualidade, reprodutibilidade e automação.
+
+*Neste projeto:*
+- **Ingestão de 4 fontes heterogêneas** (CVM por CSV; yfinance/brapi/BCB por API).
+- **Arquitetura Medallion** (Bronze→Silver→Gold) no **Supabase/PostgreSQL**.
+- **Dado *point-in-time*:** usa a *data de divulgação* oficial (CVM `DT_RECEB`) para nunca
+  "olhar o futuro" — o erro nº 1 em projetos financeiros.
+- **Robustez do mundo real:** retry/lotes para a instabilidade do yfinance; normalização de
+  inconsistências da CVM (unidades do nº de ações; plano de contas que muda por setor).
+- **Reprodutibilidade e CI:** um comando roda o pipeline inteiro; testes + lint a cada push.
+
+### 🔬 Cientista de Dados
+*No mercado:* formula hipóteses, cria *features*, treina e **valida modelos com rigor
+estatístico**, e comunica a incerteza com honestidade.
+
+*Neste projeto:*
+- **Dataset *point-in-time*** (junção pela data de divulgação) — sem vazamento de informação.
+- **Validação temporal *walk-forward* com embargo** (nunca *k-fold* aleatório) — o critério
+  de qualidade nº 1 em ML financeiro.
+- **3 algoritmos** comparados (Random Forest, XGBoost, LightGBM) e **métrica honesta**
+  (AUC ~0,50): a ausência de "acurácia mágica" é a **prova de que não há vazamento**.
+- **Simulação de Monte Carlo** (2.500 cenários) para valor justo e risco (VaR/CVaR).
+- **Backtest** da estratégia contra o Ibovespa desde 2013.
+
+### 📊 Analista de Dados
+*No mercado:* transforma números em **decisão** — com storytelling, dashboards claros e
+comunicação para quem não é técnico.
+
+*Neste projeto:*
+- **Score interpretável** (z-score com pesos explícitos), não uma caixa-preta.
+- **Selos de negócio:** ✅ fundamentos fortes · 💎 subvalorizada · 🛡️ risco baixo.
+- **Dashboard com storytelling** (do macro ao específico), com **explicação didática em cada
+  gráfico** — qualquer pessoa entende.
+- **Comunicação honesta das limitações** (abaixo) — maturidade que vale mais que número bonito.
 
 ---
 
-## Dashboard
+## Resultados (reais e honestos)
 
-App Streamlit com leitura do macro ao específico: visão geral → ranking com selos
-(✅ fundamentos · 💎 subvalorizada · 🛡️ risco baixo) → detalhe da ação (sub-scores +
-histograma do valor justo) → risco da carteira em 6 meses.
+**Backtest 2013–2025** — comprar as melhores do ranking vs. Ibovespa:
 
-```bash
-uv run streamlit run dashboard/app.py     # abre em http://localhost:8501
-```
+| Carteira | Retorno | Sharpe | Pior queda | Acerto vs IBOV |
+|---|--:|--:|--:|--:|
+| **Melhores (top-N)** | **+1000%** | **0,85** | **−10%** | **73%** |
+| Piores (bottom-N) | −12% | 0,16 | −77% | — |
+| Ibovespa | +203% | 0,50 | −28% | — |
 
-> _(Sugestão: salve um print em `docs/dashboard.png` e referencie aqui.)_
+> **Como ler:** as "melhores" do ranking renderam muito mais que as "piores" e que o índice,
+> com menos risco — o score **separa joio de trigo**. Os números absolutos são otimistas por
+> *survivorship bias* (ver Limitações); por isso o foco é o **contraste** e o **risco**.
+
+- **Monte Carlo:** afirmações probabilísticas, ex.: *"PETR4 tem ~100% de chance de estar
+  subvalorizada"*.
+- **ML honesto:** prever "bater o índice" deu ~aleatório (AUC ~0,50) — **esperado**, e a
+  validação limpa é justamente o que comprova o rigor. O valor está no **processo**.
 
 ---
 
-## Stack
+## Limitações honestas
 
-**Implementado:** Python 3.11 · `uv` · Supabase/PostgreSQL (Medallion) · SQLAlchemy ·
-pandas/NumPy/SciPy · scikit-learn / XGBoost / LightGBM · yfinance · brapi · `python-bcb` ·
-Streamlit + Plotly · pytest · ruff · GitHub Actions (CI).
+Transparência faz parte da entrega:
 
-**Planejado (no PRD, ainda não implementado):** dbt, Pandera, Prefect (orquestração),
-Docker, SHAP, agendamento automático.
+- **Survivorship bias:** o universo são ~50 ações **líquidas de hoje** aplicadas a todo o
+  histórico — isso infla os retornos absolutos do backtest (empresas que quebraram não estão
+  na amostra). O contraste melhores-vs-piores segue válido.
+- **Universo não é *point-in-time*:** o ideal (escolher as ações como eram em cada data)
+  está documentado mas não implementado (ver `docs/02-decisoes-adr.md`).
+- **ML sem poder preditivo:** com este universo e *features*, prever o índice é ~aleatório —
+  honesto e esperado; o produto não depende disso.
+- **DCF para bancos/holdings:** simplificado; valuation por fluxo de caixa não se aplica bem
+  a eles (tratados à parte).
 
 ---
 
@@ -109,71 +148,50 @@ uv sync --extra dev --extra ingestion --extra ml --extra dashboard
 # 2. credenciais do Supabase (preencha o .env; nunca é versionado)
 cp .env.example .env
 
-# 3. ATUALIZAR OS DADOS — roda o pipeline fim-a-fim
-#    (Bronze → Silver → Gold → dataset ML; grava a data de atualização)
+# 3. ATUALIZAR OS DADOS — roda o pipeline fim-a-fim (Bronze→Silver→Gold→dataset ML)
 uv run python scripts/run_pipeline.py
 
-# 4. VER O PAINEL — não precisa reprocessar; lê o que já está no banco
+# 4. VER O PAINEL — lê o que já está no banco (não reprocessa)
 uv run streamlit run dashboard/app.py        # http://localhost:8501
-
-# análises avulsas (opcional)
-uv run python scripts/run_backtest.py
-uv run python scripts/run_montecarlo.py
 ```
 
-- **Atualizar os dados:** rode o `run_pipeline` (passo 3) — é o único comando necessário
-  para puxar dados novos; a "última atualização" no topo do dashboard reflete essa execução.
-- **Só consultar:** rode o `streamlit` (passo 4); ele lê o banco, sem reprocessar.
-- Testes e lint: `uv run pytest -q` · `uv run ruff check .`
+- **Atualizar dados:** rode o `run_pipeline` (passo 3) — único comando necessário; a "última
+  atualização" no topo do dashboard reflete essa execução.
+- **Só consultar:** rode o `streamlit` (passo 4).
+- Análises avulsas: `run_backtest.py`, `run_montecarlo.py`. Testes/lint: `uv run pytest -q`,
+  `uv run ruff check .`.
 
-> Em ambientes com **Windows Smart App Control**, o `uv run` pode ser bloqueado (erro 4551).
-> Solução: recriar o ambiente com `uv venv --clear` e `uv sync`, ou reiniciar a máquina.
+> Em ambientes com **Windows Smart App Control**, o `uv run` pode ser bloqueado (erro 4551) —
+> recrie o ambiente (`uv venv --clear && uv sync …`) ou reinicie a máquina.
 
 ---
 
-## Estrutura
+## Stack
 
-```
-ingestion/      extratores: cvm, precos (yfinance/brapi), bcb  → Bronze
-src/
-  fundamental/  Camada 1: graham, buffett, ev_ebitda, lynch, dcf, score, selos
-  ml/           Camada 2: dataset (point-in-time), treino (walk-forward)
-  montecarlo/   Camada 3: valuation, portfolio
-  backtest.py   estratégia top-N vs Ibovespa
-  config.py / db.py / universo.py
-scripts/        run_bronze, run_prices, run_silver, run_gold, run_ml_*, run_backtest,
-                run_montecarlo, run_pipeline, check_db
-dashboard/      app Streamlit
-tests/          ~41 testes (pytest)
-docs/           spike de viabilidade, ADRs, dicionário de dados
-```
+**Implementado:** Python 3.11 · `uv` · Supabase/PostgreSQL (Medallion) · SQLAlchemy ·
+pandas/NumPy/SciPy · scikit-learn / XGBoost / LightGBM · yfinance · brapi · `python-bcb` ·
+Streamlit + Plotly · pytest · ruff · GitHub Actions (CI).
 
----
-
-## Limitações honestas
-
-Transparência é parte da entrega (e do PRD):
-
-- **Survivorship bias:** o universo é uma lista de ~50 ações **líquidas de hoje** aplicada a
-  todo o histórico. Isso infla os retornos absolutos do backtest (empresas que quebraram não
-  estão na amostra). O *spread* top-vs-bottom continua válido. Ver [`docs/02-decisoes-adr.md`](docs/02-decisoes-adr.md) (ADR-001/002).
-- **Universo não é point-in-time:** o ideal (escolher as ações como elas eram em cada data,
-  por liquidez) está documentado mas **não implementado** (ADR-002).
-- **ML sem poder preditivo:** com este universo e features, prever "bater o índice" é ~aleatório.
-  É honesto e esperado — o produto não depende disso.
-- **DCF para holdings/financeiras:** simplificado; o valuation por fluxo de caixa não se
-  aplica bem a bancos e holdings (tratados à parte ou com ressalva).
+**Roadmap (ver seção abaixo):** agendamento automático, Pandera, Docker, dbt.
 
 ## Roadmap
 
-- Filtro de liquidez **point-in-time** para o backtest (elimina o survivorship).
-- **Agendamento automático** do `run_pipeline` (GitHub Actions / cron / Prefect).
-- Ampliar o universo para o IBrX-100 completo.
-- dbt (modelos Silver/Gold + testes), Pandera (qualidade), SHAP (interpretabilidade), Docker.
+- **Agendamento automático** do pipeline (GitHub Actions) — dados se atualizando sozinhos.
+- **Qualidade de dados** com Pandera (validação de schemas/regras).
+- **Docker** para reprodutibilidade (`docker compose up`).
+- Filtro de liquidez *point-in-time* (elimina o survivorship); universo até o IBrX-100 completo.
 
-## Documentação
+## Estrutura e documentação
 
-- [`PRD.md`](PRD.md) — especificação completa.
-- [`docs/01-spike-viabilidade.md`](docs/01-spike-viabilidade.md) — validação das fontes.
+```
+ingestion/  extratores (cvm, precos, bcb) → Bronze
+src/        fundamental/ (5 métodos + score + selos) · ml/ · montecarlo/ · backtest.py
+scripts/    run_pipeline e etapas individuais
+dashboard/  app Streamlit
+tests/      ~41 testes
+docs/       spike de viabilidade · ADRs · dicionário de dados
+```
+
+- [`PRD.md`](PRD.md) — especificação/visão original.
 - [`docs/02-decisoes-adr.md`](docs/02-decisoes-adr.md) — decisões de arquitetura (ADRs).
 - [`docs/03-dicionario-de-dados.md`](docs/03-dicionario-de-dados.md) — mapa CVM → indicadores.

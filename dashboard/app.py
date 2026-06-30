@@ -58,15 +58,13 @@ except Exception as exc:
 
 # ====================== cabecalho (titulo esq. / data dir.) ======================
 atualizado = pd.to_datetime(meta["atualizado_em"])
-precos_ate = pd.to_datetime(meta["precos_ate"])
-ch1, ch2 = st.columns([3, 1])
+ch1, ch2 = st.columns([3, 1], vertical_alignment="center")
 with ch1:
     st.title("Garimpo Alpha B3")
 with ch2:
     st.markdown(
-        f"<div style='text-align:right;color:{CINZA};font-size:0.85rem;padding-top:1.4rem'>"
-        f"Atualizado em<br><b style='color:{TINTA};font-size:1.0rem'>{atualizado:%d/%m/%Y %H:%M}</b>"
-        f"<br>preços até {precos_ate:%d/%m/%Y} · {int(meta['n_acoes'])} ações</div>",
+        f"<div style='text-align:right;color:{CINZA};font-size:0.9rem'>Atualizado em<br>"
+        f"<b style='color:{TINTA};font-size:1.05rem'>{atualizado:%d/%m/%Y %H:%M}</b></div>",
         unsafe_allow_html=True,
     )
 st.markdown(
@@ -84,56 +82,6 @@ k2.metric("Oportunidades (Buy)", int((gold["classificacao"] == "Buy").sum()))
 k3.metric("Subvalorizadas", int(gold["selo_subvalorizada"].sum()))
 topo = gold.iloc[0]
 k4.metric("1º do ranking", topo["ticker"], f"score {topo['score_final']:+.2f}")
-
-st.write("")
-
-# ====================== visao geral (donut + scatter) ======================
-v1, v2 = st.columns([1, 1.4])
-with v1:
-    st.markdown("**Distribuição dos sinais**")
-    st.caption("Quantas ações em cada classificação (pela margem de Graham).")
-    cont = gold["classificacao"].value_counts()
-    ordem = [c for c in ["Buy", "Hold", "Avoid"] if c in cont.index]
-    dnt = go.Figure(go.Pie(
-        labels=ordem, values=[int(cont[c]) for c in ordem], hole=0.6, sort=False,
-        marker_colors=[CORES_CLASSE[c] for c in ordem], textinfo="value",
-    ))
-    dnt.update_layout(
-        height=280, margin=dict(l=0, r=0, t=10, b=0),
-        paper_bgcolor="rgba(0,0,0,0)", font=dict(color=TINTA, size=13),
-        legend=dict(orientation="h", y=-0.05),
-        annotations=[dict(text=f"{int(meta['n_acoes'])}<br>ações", showarrow=False, font_size=18)],
-    )
-    st.plotly_chart(dnt, use_container_width=True)
-
-with v2:
-    st.markdown("**Preço atual × valor justo (Graham)**")
-    st.caption(
-        "Cada ponto é uma ação. **Acima** da linha = valor justo maior que o preço "
-        "(barata 🟢); **abaixo** = cara 🔴. Quanto mais longe da linha, maior o desvio."
-    )
-    sc = gold.dropna(subset=["valor_graham", "preco_atual"])
-    sc = sc[sc["valor_graham"] > 0]
-    fig_sc = go.Figure()
-    for cls in ordem:
-        d = sc[sc["classificacao"] == cls]
-        fig_sc.add_trace(go.Scatter(
-            x=d["preco_atual"], y=d["valor_graham"], mode="markers", name=cls,
-            marker=dict(color=CORES_CLASSE[cls], size=11, line=dict(width=0.5, color="white")),
-            text=d["ticker"],
-            hovertemplate="%{text}<br>preço R$ %{x:.2f}<br>justo R$ %{y:.2f}<extra></extra>",
-        ))
-    lim = float(max(sc["preco_atual"].max(), sc["valor_graham"].quantile(0.92)))
-    fig_sc.add_trace(go.Scatter(
-        x=[0, lim], y=[0, lim], mode="lines", name="preço = justo",
-        line=dict(dash="dot", color=CINZA), hoverinfo="skip",
-    ))
-    fig_sc.update_layout(xaxis_title="preço atual (R$)", yaxis_title="valor justo (R$)")
-    fig_sc.update_xaxes(range=[0, sc["preco_atual"].max() * 1.1])
-    fig_sc.update_yaxes(range=[0, lim * 1.05])
-    fig_sc = estilo(fig_sc, 280)
-    fig_sc.update_layout(showlegend=True, legend=dict(orientation="h", y=-0.25))
-    st.plotly_chart(fig_sc, use_container_width=True)
 
 st.divider()
 
@@ -214,6 +162,7 @@ with col_a:
     st.plotly_chart(estilo(fig, 260), use_container_width=True)
 
 with col_b:
+    st.markdown(f"**Quanto {tk} vale? — valor justo em R$ (Monte Carlo)**")
     if ult["setor"] == "operacional" and pd.notna(ult["fco_mil"]):
         cresc = crescimento_lucro(sil["fco_mil"].tolist(), sil["ano"].tolist())
         valores = simular_valores(
@@ -223,15 +172,21 @@ with col_b:
         preco = linha["preco_atual"]
         if valores.size and pd.notna(preco):
             prob = float((valores > preco).mean())
+            st.caption(
+                "Simulamos **2.500 cenários** do valor justo da ação (variando crescimento "
+                "e juros). Cada barra conta **quantos cenários** deram aquele valor; a linha "
+                "vermelha é o **preço de hoje**. Quanto mais a 'montanha' estiver à **direita** "
+                "do preço, mais **barata** a ação."
+            )
             fig2 = go.Figure(go.Histogram(x=valores, nbinsx=40, marker_color=INDIGO, opacity=0.8))
             fig2.add_vline(x=preco, line_color=VERMELHO, line_width=3,
                            annotation_text=f"preço R$ {preco:.0f}", annotation_position="top")
-            fig2.update_layout(xaxis_title="valor justo estimado por ação (R$)",
+            fig2.update_layout(xaxis_title="valor justo por ação (R$)",
                                yaxis_title="nº de cenários")
             st.plotly_chart(estilo(fig2, 260), use_container_width=True)
             st.markdown(
-                f"**{prob:.0%}** dos 2.500 cenários apontam valor justo **acima** do preço "
-                f"atual — ou seja, {prob:.0%} de chance de estar subvalorizada."
+                f"➡️ **{prob:.0%}** dos cenários dão valor **acima** do preço — ou seja, "
+                f"**{prob:.0%} de chance de {tk} estar subvalorizada**."
             )
         else:
             st.info("Sem valor justo calculável para esta ação.")
@@ -247,10 +202,11 @@ st.divider()
 st.subheader("E se eu investir nas 3 melhores? (risco em 6 meses)")
 topn = gold.head(3)["ticker"].tolist()
 st.caption(
-    f"Simulamos **2.500 cenários** para os próximos **6 meses** de uma carteira dividida "
-    f"igualmente entre as 3 primeiras do ranking ({', '.join(topn)}). O gráfico mostra "
-    "todos os resultados possíveis; as faixas abaixo traduzem o que esperar — inclusive "
-    "no pior caso."
+    f"Outra simulação de Monte Carlo — mas aqui o eixo é o **retorno em %** de uma "
+    f"**carteira** (não o valor de uma ação em R$ como acima). Rodamos **2.500 cenários** "
+    f"de 6 meses para uma carteira igualmente dividida entre as 3 primeiras "
+    f"({', '.join(topn)}). Cada barra conta quantos cenários deram aquele retorno; as "
+    "faixas abaixo traduzem o que esperar, inclusive no pior caso."
 )
 finais, _ = simular_retornos_carteira(retornos_mensais(precos, topn), horizonte=6)
 mediana = float(pd.Series(finais).median())
