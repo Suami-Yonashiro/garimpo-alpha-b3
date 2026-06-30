@@ -28,8 +28,9 @@ CORES_CLASSE = {"Buy": VERDE, "Hold": AMBAR, "Avoid": VERMELHO, "N/A": CINZA}
 
 
 def estilo(fig: go.Figure, altura: int = 280) -> go.Figure:
+    # t=48: espaco no topo p/ anotacoes das linhas (preco/pior 5%) nao serem cortadas
     fig.update_layout(
-        height=altura, margin=dict(l=10, r=10, t=10, b=30), bargap=0.08,
+        height=altura, margin=dict(l=10, r=10, t=48, b=30), bargap=0.08,
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         font=dict(color=TINTA, size=13), showlegend=False,
     )

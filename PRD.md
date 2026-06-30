@@ -6,6 +6,8 @@
 
 > ⚠️ **Disclaimer:** projeto educacional e de portfólio. Não constitui recomendação de investimento. Resultados passados não garantem resultados futuros.
 
+> 📌 **Status de implementação:** este PRD é a **visão/especificação original** e permanece como referência. O **estado atual do que foi construído** (e os desvios conscientes — ex.: universo, survivorship) está no [`README.md`](README.md) e em [`docs/02-decisoes-adr.md`](docs/02-decisoes-adr.md). Itens ainda não implementados (dbt, Pandera, Prefect, Docker, SHAP, agendamento) estão no roadmap do README.
+
 ---
 
 ## 1. Visão geral.

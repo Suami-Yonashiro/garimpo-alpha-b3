@@ -109,16 +109,25 @@ uv sync --extra dev --extra ingestion --extra ml --extra dashboard
 # 2. credenciais do Supabase (preencha o .env; nunca é versionado)
 cp .env.example .env
 
-# 3. pipeline completo (Bronze → Silver → Gold → dataset ML)
+# 3. ATUALIZAR OS DADOS — roda o pipeline fim-a-fim
+#    (Bronze → Silver → Gold → dataset ML; grava a data de atualização)
 uv run python scripts/run_pipeline.py
 
-# 4. análises e dashboard
+# 4. VER O PAINEL — não precisa reprocessar; lê o que já está no banco
+uv run streamlit run dashboard/app.py        # http://localhost:8501
+
+# análises avulsas (opcional)
 uv run python scripts/run_backtest.py
 uv run python scripts/run_montecarlo.py
-uv run streamlit run dashboard/app.py
 ```
 
-Testes e lint: `uv run pytest -q` · `uv run ruff check .`
+- **Atualizar os dados:** rode o `run_pipeline` (passo 3) — é o único comando necessário
+  para puxar dados novos; a "última atualização" no topo do dashboard reflete essa execução.
+- **Só consultar:** rode o `streamlit` (passo 4); ele lê o banco, sem reprocessar.
+- Testes e lint: `uv run pytest -q` · `uv run ruff check .`
+
+> Em ambientes com **Windows Smart App Control**, o `uv run` pode ser bloqueado (erro 4551).
+> Solução: recriar o ambiente com `uv venv --clear` e `uv sync`, ou reiniciar a máquina.
 
 ---
 
