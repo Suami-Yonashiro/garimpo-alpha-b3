@@ -15,18 +15,14 @@ def retornos_mensais(precos: pd.DataFrame, tickers: list[str]) -> pd.DataFrame:
     return mensal.pct_change().dropna()
 
 
-def simular_carteira(
+def simular_retornos_carteira(
     retornos: pd.DataFrame,
     pesos: np.ndarray | None = None,
     horizonte: int = 6,
     n_sim: int = 2500,
     seed: int = 42,
-) -> dict:
-    """Distribuicao do retorno da carteira no horizonte + VaR/CVaR/drawdown.
-
-    VaR_5 e o 5º percentil do retorno (perda no pior 5% dos cenarios); CVaR_5 e a
-    media dos retornos abaixo desse percentil (perda esperada na cauda).
-    """
+) -> tuple[np.ndarray, np.ndarray]:
+    """Arrays (retorno_final, drawdown) de cada cenario simulado da carteira."""
     n_ativos = retornos.shape[1]
     if pesos is None:
         pesos = np.full(n_ativos, 1 / n_ativos)  # equiponderado
@@ -41,7 +37,22 @@ def simular_carteira(
     curvas = np.cumprod(1 + port, axis=1)        # (n_sim, horizonte)
     finais = curvas[:, -1] - 1
     drawdowns = (curvas / np.maximum.accumulate(curvas, axis=1) - 1).min(axis=1)
+    return finais, drawdowns
 
+
+def simular_carteira(
+    retornos: pd.DataFrame,
+    pesos: np.ndarray | None = None,
+    horizonte: int = 6,
+    n_sim: int = 2500,
+    seed: int = 42,
+) -> dict:
+    """Distribuicao do retorno da carteira no horizonte + VaR/CVaR/drawdown.
+
+    VaR_5 e o 5º percentil do retorno (perda no pior 5% dos cenarios); CVaR_5 e a
+    media dos retornos abaixo desse percentil (perda esperada na cauda).
+    """
+    finais, drawdowns = simular_retornos_carteira(retornos, pesos, horizonte, n_sim, seed)
     var5 = float(np.percentile(finais, 5))
     return {
         "retorno_p50": float(np.percentile(finais, 50)),

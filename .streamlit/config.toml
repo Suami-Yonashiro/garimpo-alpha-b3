@@ -1,10 +1,12 @@
-# Tema do dashboard (PRD secao 12): dark mode + 1 cor de destaque (verde fintech).
+# Tema do dashboard (PRD secao 12): base CLARA contemporanea + cor com funcao.
+# Base neutra clara; cores semanticas (verde=oportunidade, ambar=neutro, vermelho=risco)
+# ficam reservadas aos dados; o accent (indigo) e so para a interface.
 [theme]
-base = "dark"
-primaryColor = "#16C784"               # verde esmeralda — destaque/oportunidade
-backgroundColor = "#0B0F14"            # fundo escuro profundo
-secondaryBackgroundColor = "#161B22"   # cards, tabela, sidebar
-textColor = "#E6EDF3"
+base = "light"
+primaryColor = "#4F46E5"               # indigo — accent da interface
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F1F5F9"   # slate-100 (cards, tabela)
+textColor = "#0F172A"                   # slate-900
 font = "sans serif"
 
 [browser]
