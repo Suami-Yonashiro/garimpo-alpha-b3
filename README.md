@@ -33,8 +33,10 @@ Sobre essa base, três camadas de análise:
    DCF) viram um **score único** comparável entre as ações.
 2. **Machine Learning (dá para prever?)** — um modelo tenta prever se a ação supera o
    Ibovespa. *Spoiler honesto:* quase não dá (e isso é esperado — explico abaixo).
-3. **Monte Carlo (qual o risco?)** — milhares de cenários simulados para estimar **valor
-   justo** e **risco da carteira** (VaR/CVaR).
+3. **Monte Carlo (qual o risco?)** — em vez de um número único, roda **2.500 cenários**
+   variando as premissas incertas (crescimento dos lucros, taxa de juros). Para uma ação,
+   gera a **distribuição do valor justo** (e a chance de estar barata); para a carteira, a
+   **distribuição de retornos** em 6 meses — de onde sai o risco no pior caso (**VaR/CVaR**).
 
 ```mermaid
 flowchart LR
@@ -53,6 +55,25 @@ flowchart LR
     ML --> D
     MC --> D
 ```
+
+### De onde vêm os dados (4 fontes oficiais)
+
+| Fonte | O que é | O que extraímos |
+|---|---|---|
+| **CVM** (dados.cvm.gov.br) | Órgão regulador do mercado; portal de **Dados Abertos** do governo | Demonstrações financeiras (DFP): balanço, DRE (resultado) e fluxo de caixa — **com a data de divulgação** (essencial para o *point-in-time*) |
+| **yfinance** | Biblioteca que lê o **Yahoo Finance** | Preços históricos diários **ajustados** (desde 2012) + o **Ibovespa** (índice da bolsa) |
+| **brapi** (brapi.dev) | API de mercado da B3 | Cotação corrente (fallback) |
+| **BCB/SGS** | **Banco Central** — Sistema Gerenciador de Séries | **SELIC** (juros), **IPCA** (inflação) e **câmbio** USD/BRL |
+
+### Os 5 métodos fundamentalistas (glossário)
+
+| Método | Significado | O que mede |
+|---|---|---|
+| **Graham** | Valor intrínseco de Benjamin Graham: √(22,5 × LPA × VPA) | Se o preço está abaixo de um "valor de barganha" |
+| **Buffett** | Qualidade do negócio (ROE = retorno sobre patrimônio, margem líquida) | Se a empresa é **boa e consistente** |
+| **EV/EBITDA** | **EV** = valor da empresa (mercado + dívida líquida); **EBITDA** = lucro operacional antes de juros, impostos, depreciação e amortização | Quão **cara** é a geração de caixa (menor = mais barata) |
+| **Lynch** | Peter Lynch: **PEG** = (Preço/Lucro) ÷ crescimento dos lucros | **Crescimento a preço razoável** (menor = melhor) |
+| **DCF** | **Discounted Cash Flow** (Fluxo de Caixa Descontado) | Projeta o caixa futuro e traz a valor presente → **valor justo** |
 
 ---
 
@@ -81,8 +102,10 @@ estatístico**, e comunica a incerteza com honestidade.
 - **Dataset *point-in-time*** (junção pela data de divulgação) — sem vazamento de informação.
 - **Validação temporal *walk-forward* com embargo** (nunca *k-fold* aleatório) — o critério
   de qualidade nº 1 em ML financeiro.
-- **3 algoritmos** comparados (Random Forest, XGBoost, LightGBM) e **métrica honesta**
-  (AUC ~0,50): a ausência de "acurácia mágica" é a **prova de que não há vazamento**.
+- **3 algoritmos de árvore de decisão** comparados: **Random Forest** (várias árvores
+  "votando"), **XGBoost** e **LightGBM** (árvores sequenciais que corrigem o erro da
+  anterior — os mais usados em competições). **Métrica honesta** (AUC ~0,50): a ausência de
+  "acurácia mágica" é a **prova de que não há vazamento**.
 - **Simulação de Monte Carlo** (2.500 cenários) para valor justo e risco (VaR/CVaR).
 - **Backtest** da estratégia contra o Ibovespa desde 2013.
 
@@ -101,17 +124,23 @@ comunicação para quem não é técnico.
 
 ## Resultados (reais e honestos)
 
-**Backtest 2013–2025** — comprar as melhores do ranking vs. Ibovespa:
+**O teste (backtest):** voltamos a **2013** e, a cada 6 meses, "compramos" no simulador as
+**3 melhores** do ranking — e, só para comparar, as **3 piores**. Medimos o resultado de cada
+carteira ao longo de ~12 anos, sempre contra o **Ibovespa** (o índice da bolsa, nosso
+referencial). A pergunta: *o ranking realmente separa boas de más ações?*
 
-| Carteira | Retorno | Sharpe | Pior queda | Acerto vs IBOV |
+| Carteira | Retorno acumulado | Sharpe (retorno/risco) | Pior queda | Acerto vs IBOV |
 |---|--:|--:|--:|--:|
-| **Melhores (top-N)** | **+1000%** | **0,85** | **−10%** | **73%** |
-| Piores (bottom-N) | −12% | 0,16 | −77% | — |
-| Ibovespa | +203% | 0,50 | −28% | — |
+| **Melhores (top do ranking)** | **+1000%** | **0,85** | **−10%** | **73%** |
+| Piores (fundo do ranking) | −12% | 0,16 | −77% | — |
+| Ibovespa (referência) | +203% | 0,50 | −28% | — |
 
-> **Como ler:** as "melhores" do ranking renderam muito mais que as "piores" e que o índice,
-> com menos risco — o score **separa joio de trigo**. Os números absolutos são otimistas por
-> *survivorship bias* (ver Limitações); por isso o foco é o **contraste** e o **risco**.
+> **Conclusão:** as "melhores" do ranking renderam **muito mais** que as "piores" (+1000% vs
+> −12%) e que o índice, com **menos risco** (Sharpe maior, queda menor) e acertando 73% dos
+> períodos. Isso mostra que o score **separa joio de trigo** — é o principal resultado do
+> projeto. ⚠️ Os **números absolutos** são otimistas por *survivorship bias* (usamos os
+> sobreviventes de hoje — ver [Limitações](#limitações-honestas)); por isso o que importa é o
+> **contraste** entre melhores e piores, não o "+1000%" isolado.
 
 - **Monte Carlo:** afirmações probabilísticas, ex.: *"PETR4 tem ~100% de chance de estar
   subvalorizada"*.
