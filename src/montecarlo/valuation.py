@@ -9,6 +9,32 @@ import numpy as np
 from src.fundamental import dcf
 
 
+def simular_valores(
+    fco_base: float,
+    crescimento: float | None,
+    selic: float,
+    divida_liquida_mil: float | None,
+    acoes_mil: float | None,
+    n_sim: int = 2500,
+    sigma_cresc: float = 0.03,
+    sigma_selic: float = 0.02,
+    seed: int = 42,
+) -> np.ndarray:
+    """Distribuicao (array) do valor justo por acao, variando premissas do DCF."""
+    rng = np.random.default_rng(seed)
+    g_base = crescimento if crescimento is not None else 0.0
+    cresc = np.clip(rng.normal(g_base, sigma_cresc, n_sim), 0.0, dcf.CRESCIMENTO_MAX)
+    selics = np.clip(rng.normal(selic, sigma_selic, n_sim), 0.02, None)
+    return np.array(
+        [
+            v
+            for g, s in zip(cresc, selics)
+            if (v := dcf.valor_intrinseco(fco_base, g, s, divida_liquida_mil, acoes_mil))
+            is not None
+        ]
+    )
+
+
 def simular_valuation(
     fco_base: float,
     crescimento: float | None,
@@ -22,18 +48,9 @@ def simular_valuation(
     seed: int = 42,
 ) -> dict | None:
     """Distribuicao do valor justo (DCF) e probabilidade de subvalorizacao."""
-    rng = np.random.default_rng(seed)
-    g_base = crescimento if crescimento is not None else 0.0
-    cresc = np.clip(rng.normal(g_base, sigma_cresc, n_sim), 0.0, dcf.CRESCIMENTO_MAX)
-    selics = np.clip(rng.normal(selic, sigma_selic, n_sim), 0.02, None)
-
-    valores = np.array(
-        [
-            v
-            for g, s in zip(cresc, selics)
-            if (v := dcf.valor_intrinseco(fco_base, g, s, divida_liquida_mil, acoes_mil))
-            is not None
-        ]
+    valores = simular_valores(
+        fco_base, crescimento, selic, divida_liquida_mil, acoes_mil,
+        n_sim, sigma_cresc, sigma_selic, seed,
     )
     if valores.size == 0:
         return None

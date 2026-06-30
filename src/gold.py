@@ -3,6 +3,9 @@
 Le silver_fundamentals (historico multi-ano), busca precos, calcula os
 indicadores de cada metodo e combina tudo num score_final via z-score.
 """
+import datetime
+
+import numpy as np
 import pandas as pd
 
 from ingestion.bcb import selic_atual
@@ -38,9 +41,14 @@ def build_gold(engine) -> pd.DataFrame:
     selic = selic_atual()  # taxa livre de risco para o WACC do DCF
     # preco atual = ultimo fechamento ja ingerido em bronze_prices (sem nova chamada de rede)
     ph = pd.read_sql("select ticker, data, close from bronze_prices", engine)
+    ph["data"] = pd.to_datetime(ph["data"])
     precos = ph.sort_values("data").groupby("ticker")["close"].last().to_dict()
     # so ranqueia acoes com cotacao disponivel
     silver = silver[silver["ticker"].isin(precos)]
+
+    # volatilidade anualizada por acao (retornos mensais) -> selo de risco
+    mret = ph.pivot_table(index="data", columns="ticker", values="close").resample("ME").last().pct_change()
+    vol = (mret.std() * np.sqrt(12)).to_dict()
 
     linhas = []
     for _, row in silver.iterrows():
@@ -80,6 +88,8 @@ def build_gold(engine) -> pd.DataFrame:
                 # DCF
                 "valor_dcf": valor_dcf,
                 "margem_dcf": margem_seguranca(valor_dcf, preco),
+                # risco
+                "volatilidade": vol.get(row["ticker"]),
             }
         )
 
@@ -88,4 +98,12 @@ def build_gold(engine) -> pd.DataFrame:
     gold = gold.sort_values("score_final", ascending=False, na_position="last")
     gold.insert(0, "ranking", range(1, len(gold) + 1))
     gold.to_sql("gold_fundamental_scores", engine, if_exists="replace", index=False)
+
+    # meta de atualizacao (orienta o analista no dashboard)
+    pd.DataFrame(
+        [{"atualizado_em": datetime.datetime.now(),
+          "precos_ate": ph["data"].max(),
+          "n_acoes": len(gold),
+          "selic": selic}]
+    ).to_sql("meta_pipeline", engine, if_exists="replace", index=False)
     return gold

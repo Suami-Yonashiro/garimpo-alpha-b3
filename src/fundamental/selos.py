@@ -26,4 +26,9 @@ def aplicar_selos(gold: pd.DataFrame, percentil_forte: float = 0.70) -> pd.DataF
         margem_dcf = pd.Series(-1.0, index=out.index)
     out["selo_subvalorizada"] = (margem_graham > 0) | (margem_dcf > 0)
 
+    # 🛡️ risco baixo: volatilidade abaixo da mediana do universo
+    if "volatilidade" in out.columns:
+        mediana = out["volatilidade"].median()
+        out["selo_risco_baixo"] = out["volatilidade"] <= mediana
+
     return out
