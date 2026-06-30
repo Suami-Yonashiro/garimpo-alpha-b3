@@ -1,22 +1,70 @@
-"""Universo de acoes do projeto (curado para esta fase).
+"""Universo de acoes do projeto — ~IBrX-100 (nomes liquidos).
 
-Mapeia o ticker da B3 -> CNPJ (como a CVM identifica a empresa) + setor.
-O 'setor' decide quais contas usar na Silver (banco x operacional; ver
-docs/03-dicionario-de-dados.md). CNPJs conferidos no indice da CVM.
-
-Mais a frente este universo sera o IBrX-100 completo (loop automatizado).
+Mapeia ticker da B3 -> CNPJ (como a CVM identifica a empresa) + setor.
+- 'setor' = "operacional" (industria/servicos) ou "financeiro" (bancos/seguradoras).
+  Decide se EV/EBITDA e DCF se aplicam (so operacionais; ver silver.py).
+- CNPJs e setores resolvidos automaticamente do indice/DRE da CVM (2023) por
+  casamento de nome insensivel a acento + heuristica pela conta 3.01.
 """
 
-# setor: "operacional" (industrial/servicos) ou "banco" (financeiro)
 UNIVERSO = {
-    "PETR4": {"cnpj": "33.000.167/0001-01", "setor": "operacional"},
-    "VALE3": {"cnpj": "33.592.510/0001-54", "setor": "operacional"},
     "ABEV3": {"cnpj": "07.526.557/0001-00", "setor": "operacional"},
-    "WEGE3": {"cnpj": "84.429.695/0001-11", "setor": "operacional"},
-    "SUZB3": {"cnpj": "16.404.287/0001-55", "setor": "operacional"},
-    "EGIE3": {"cnpj": "02.474.103/0001-19", "setor": "operacional"},
-    "RADL3": {"cnpj": "61.585.865/0001-51", "setor": "operacional"},
+    "ALPA4": {"cnpj": "61.079.117/0001-05", "setor": "operacional"},
+    "ASAI3": {"cnpj": "06.057.223/0001-71", "setor": "operacional"},
+    "AZUL4": {"cnpj": "09.305.994/0001-29", "setor": "operacional"},
     "B3SA3": {"cnpj": "09.346.601/0001-25", "setor": "operacional"},
-    "ITUB4": {"cnpj": "60.872.504/0001-23", "setor": "banco"},
-    "BBDC4": {"cnpj": "60.746.948/0001-12", "setor": "banco"},
+    "BBAS3": {"cnpj": "00.000.000/0001-91", "setor": "financeiro"},
+    "BBDC4": {"cnpj": "60.746.948/0001-12", "setor": "financeiro"},
+    "BBSE3": {"cnpj": "17.344.597/0001-94", "setor": "operacional"},
+    "BEEF3": {"cnpj": "67.620.377/0001-14", "setor": "operacional"},
+    "BPAC11": {"cnpj": "30.306.294/0001-45", "setor": "financeiro"},
+    "BRAP4": {"cnpj": "03.847.461/0001-92", "setor": "operacional"},
+    "BRFS3": {"cnpj": "01.838.723/0001-27", "setor": "operacional"},
+    "CMIG4": {"cnpj": "17.155.730/0001-64", "setor": "operacional"},
+    "COGN3": {"cnpj": "02.800.026/0001-40", "setor": "operacional"},
+    "CPLE6": {"cnpj": "76.483.817/0001-20", "setor": "operacional"},
+    "CSAN3": {"cnpj": "50.746.577/0001-15", "setor": "operacional"},
+    "CSNA3": {"cnpj": "33.042.730/0001-04", "setor": "operacional"},
+    "CYRE3": {"cnpj": "73.178.600/0001-18", "setor": "operacional"},
+    "EGIE3": {"cnpj": "02.474.103/0001-19", "setor": "operacional"},
+    "EMBR3": {"cnpj": "07.689.002/0001-89", "setor": "operacional"},
+    "ENEV3": {"cnpj": "04.423.567/0001-21", "setor": "operacional"},
+    "ENGI11": {"cnpj": "00.864.214/0001-06", "setor": "operacional"},
+    "EQTL3": {"cnpj": "03.220.438/0001-73", "setor": "operacional"},
+    "FLRY3": {"cnpj": "60.840.055/0001-31", "setor": "operacional"},
+    "GGBR4": {"cnpj": "33.611.500/0001-19", "setor": "operacional"},
+    "GOAU4": {"cnpj": "92.690.783/0001-09", "setor": "operacional"},
+    "HAPV3": {"cnpj": "05.197.443/0001-38", "setor": "operacional"},
+    "HYPE3": {"cnpj": "02.932.074/0001-91", "setor": "operacional"},
+    "ITSA4": {"cnpj": "61.532.644/0001-15", "setor": "operacional"},
+    "ITUB4": {"cnpj": "60.872.504/0001-23", "setor": "financeiro"},
+    "JBSS3": {"cnpj": "02.916.265/0001-60", "setor": "operacional"},
+    "KLBN11": {"cnpj": "89.637.490/0001-45", "setor": "operacional"},
+    "LREN3": {"cnpj": "92.754.738/0001-62", "setor": "operacional"},
+    "MGLU3": {"cnpj": "47.960.950/0001-21", "setor": "operacional"},
+    "MRFG3": {"cnpj": "03.853.896/0001-40", "setor": "operacional"},
+    "MULT3": {"cnpj": "07.816.890/0001-53", "setor": "operacional"},
+    "NTCO3": {"cnpj": "32.785.497/0001-97", "setor": "operacional"},
+    "PETR4": {"cnpj": "33.000.167/0001-01", "setor": "operacional"},
+    "PRIO3": {"cnpj": "10.629.105/0001-68", "setor": "operacional"},
+    "PSSA3": {"cnpj": "02.149.205/0001-69", "setor": "operacional"},
+    "RADL3": {"cnpj": "61.585.865/0001-51", "setor": "operacional"},
+    "RAIL3": {"cnpj": "02.387.241/0001-60", "setor": "operacional"},
+    "RDOR3": {"cnpj": "06.047.087/0001-39", "setor": "operacional"},
+    "RENT3": {"cnpj": "16.670.085/0001-55", "setor": "operacional"},
+    "SANB11": {"cnpj": "90.400.888/0001-42", "setor": "financeiro"},
+    "SBSP3": {"cnpj": "43.776.517/0001-80", "setor": "operacional"},
+    "SLCE3": {"cnpj": "89.096.457/0001-55", "setor": "operacional"},
+    "SMTO3": {"cnpj": "51.466.860/0001-56", "setor": "operacional"},
+    "SUZB3": {"cnpj": "16.404.287/0001-55", "setor": "operacional"},
+    "TAEE11": {"cnpj": "07.859.971/0001-30", "setor": "operacional"},
+    "TIMS3": {"cnpj": "02.421.421/0001-11", "setor": "operacional"},
+    "TOTS3": {"cnpj": "53.113.791/0001-22", "setor": "operacional"},
+    "UGPA3": {"cnpj": "33.256.439/0001-39", "setor": "operacional"},
+    "USIM5": {"cnpj": "60.894.730/0001-05", "setor": "operacional"},
+    "VALE3": {"cnpj": "33.592.510/0001-54", "setor": "operacional"},
+    "VBBR3": {"cnpj": "34.274.233/0001-02", "setor": "operacional"},
+    "VIVT3": {"cnpj": "02.558.157/0001-62", "setor": "operacional"},
+    "WEGE3": {"cnpj": "84.429.695/0001-11", "setor": "operacional"},
+    "YDUQ3": {"cnpj": "08.807.432/0001-10", "setor": "operacional"},
 }

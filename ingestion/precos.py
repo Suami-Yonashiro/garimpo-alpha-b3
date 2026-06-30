@@ -45,30 +45,49 @@ def precos_atuais_yf(tickers: list[str]) -> dict[str, float]:
     return precos
 
 
-def precos_historicos_yf(tickers: list[str], inicio: str = "2012-01-01") -> pd.DataFrame:
+def precos_historicos_yf(
+    tickers: list[str], inicio: str = "2012-01-01", tamanho_lote: int = 10
+) -> pd.DataFrame:
     """Historico diario de fechamento AJUSTADO (yfinance) do universo + Ibovespa.
 
     Retorna formato longo: colunas ticker, data, close. O Ibovespa entra como
-    ticker 'IBOV' (simbolo ^BVSP) para servir de benchmark no ML/backtest.
-    auto_adjust=True ja ajusta por proventos/desdobramentos (correto p/ retornos).
+    ticker 'IBOV' (simbolo ^BVSP). auto_adjust=True ajusta por proventos.
+
+    Baixa em LOTES pequenos com retry/pausa: o Yahoo throttle lotes grandes
+    (tickers viram 'possibly delisted'). Lotes menores sao bem mais confiaveis.
     """
     import yfinance as yf
 
     simbolos = {f"{t}.SA": t for t in tickers}
     simbolos["^BVSP"] = "IBOV"
+    todos = list(simbolos)
 
-    dados = yf.download(
-        list(simbolos), start=inicio, auto_adjust=True, progress=False
-    )
-    fechamentos = dados["Close"]  # wide: uma coluna por simbolo
+    frames = []
+    for i in range(0, len(todos), tamanho_lote):
+        lote = todos[i : i + tamanho_lote]
+        fechamentos = pd.DataFrame()
+        for _ in range(3):  # retry contra throttling
+            dados = yf.download(lote, start=inicio, auto_adjust=True, progress=False)
+            fechamentos = dados["Close"] if "Close" in dados else pd.DataFrame()
+            faltando = [s for s in lote if s not in fechamentos.columns]
+            if not faltando:
+                break
+            time.sleep(2)
+        if fechamentos.empty:
+            continue
+        longo = (
+            fechamentos.reset_index()
+            .melt(id_vars="Date", var_name="simbolo", value_name="close")
+            .dropna(subset=["close"])
+        )
+        frames.append(longo)
+        time.sleep(1)  # gentileza entre lotes
 
-    longo = (
-        fechamentos.reset_index()
-        .melt(id_vars="Date", var_name="simbolo", value_name="close")
-        .dropna(subset=["close"])
-    )
+    longo = pd.concat(frames, ignore_index=True)
     longo["ticker"] = longo["simbolo"].map(simbolos)
-    return longo[["ticker", "Date", "close"]].rename(columns={"Date": "data"})
+    return longo[["ticker", "Date", "close"]].rename(columns={"Date": "data"}).dropna(
+        subset=["ticker"]
+    )
 
 
 def precos_atuais_brapi(tickers: list[str]) -> dict[str, float]:

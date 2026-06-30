@@ -32,8 +32,8 @@ def main() -> None:
     _resumo("Carteira bottom-N", bottom["carteira"])
     _resumo("Ibovespa (benchmark)", top["ibov"])
 
-    print("\nNota: 10 ações é pouco p/ conclusão estatística; backtest é demonstração.")
-    print("Top-N deveria superar bottom-N se o score tiver sinal.")
+    print("\nTop-N deveria superar bottom-N (e o IBOV) se o score tiver sinal.")
+    print("Survivorship bias infla os retornos absolutos (ADR-001).")
 
 
 if __name__ == "__main__":

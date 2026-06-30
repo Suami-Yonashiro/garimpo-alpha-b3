@@ -89,12 +89,14 @@ def depreciacao_amortizacao(dfc: pd.DataFrame) -> float:
 def indicadores_ev(dre: pd.DataFrame, bpp: pd.DataFrame, bpa: pd.DataFrame,
                    dfc: pd.DataFrame) -> dict:
     """EBITDA e divida liquida (entradas do EV/EBITDA). So faz sentido p/ operacionais."""
-    ebit = valor_conta(dre, CD_EBIT)
+    # EBIT pode faltar (ex.: empresa financeira mal classificada) -> EBITDA None,
+    # sem derrubar a empresa (os demais indicadores seguem)
+    ebit = valor_conta_opcional(dre, CD_EBIT, default=None)
     da = depreciacao_amortizacao(dfc)
     divida_bruta = sum(valor_conta_opcional(bpp, cd) for cd in CD_DIVIDA)
     caixa = valor_conta_opcional(bpa, CD_CAIXA)
     return {
-        "ebitda_mil": ebit + da,
+        "ebitda_mil": (ebit + da) if ebit is not None else None,
         "divida_liquida_mil": divida_bruta - caixa,
         "fco_mil": valor_conta_opcional(dfc, CD_FCO, default=None),  # p/ DCF
     }

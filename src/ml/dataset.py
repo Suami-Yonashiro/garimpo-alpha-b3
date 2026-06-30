@@ -8,6 +8,7 @@ Para cada (acao, fim de mes) gera uma linha com:
 A honestidade point-in-time (usar so o que era publico na data, via merge_asof na
 DT_RECEB) e o que sustenta a credibilidade do modelo — ver docs/02-decisoes-adr.md.
 """
+import numpy as np
 import pandas as pd
 
 from ingestion.bcb import series_macro
@@ -91,6 +92,10 @@ def build_dataset(engine, horizonte_meses: int = 6) -> pd.DataFrame:
         dataset.sort_values("data"), macro.sort_values("data"),
         on="data", direction="backward",
     )
+
+    # razoes com denominador ~0 viram inf (ex.: PL ~0) -> NaN (imputador nao trata inf)
+    cols_feat = [*FEATURES_MOMENTUM, *FEATURES_FUND, *FEATURES_MACRO]
+    dataset[cols_feat] = dataset[cols_feat].replace([np.inf, -np.inf], np.nan)
 
     # exige features SEMPRE presentes; as operacionais-only ficam NaN p/ o imputador
     obrigatorias = ["target", *FEATURES_MOMENTUM, *FEATURES_FUND_BASE, *FEATURES_MACRO]

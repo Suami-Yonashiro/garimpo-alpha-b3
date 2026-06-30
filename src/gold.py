@@ -6,7 +6,6 @@ indicadores de cada metodo e combina tudo num score_final via z-score.
 import pandas as pd
 
 from ingestion.bcb import selic_atual
-from ingestion.precos import precos_atuais_yf
 from src.fundamental import dcf
 from src.fundamental.buffett import margem_liquida, roe
 from src.fundamental.ev_ebitda import enterprise_value, ev_ebitda
@@ -37,7 +36,11 @@ def build_gold(engine) -> pd.DataFrame:
         cresc_lucro = cresc_fco = {}
 
     selic = selic_atual()  # taxa livre de risco para o WACC do DCF
-    precos = precos_atuais_yf(silver["ticker"].tolist())
+    # preco atual = ultimo fechamento ja ingerido em bronze_prices (sem nova chamada de rede)
+    ph = pd.read_sql("select ticker, data, close from bronze_prices", engine)
+    precos = ph.sort_values("data").groupby("ticker")["close"].last().to_dict()
+    # so ranqueia acoes com cotacao disponivel
+    silver = silver[silver["ticker"].isin(precos)]
 
     linhas = []
     for _, row in silver.iterrows():
