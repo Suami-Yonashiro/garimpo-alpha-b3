@@ -85,6 +85,56 @@ k3.metric("Subvalorizadas", int(gold["selo_subvalorizada"].sum()))
 topo = gold.iloc[0]
 k4.metric("1º do ranking", topo["ticker"], f"score {topo['score_final']:+.2f}")
 
+st.write("")
+
+# ====================== visao geral (donut + scatter) ======================
+v1, v2 = st.columns([1, 1.4])
+with v1:
+    st.markdown("**Distribuição dos sinais**")
+    st.caption("Quantas ações em cada classificação (pela margem de Graham).")
+    cont = gold["classificacao"].value_counts()
+    ordem = [c for c in ["Buy", "Hold", "Avoid"] if c in cont.index]
+    dnt = go.Figure(go.Pie(
+        labels=ordem, values=[int(cont[c]) for c in ordem], hole=0.6, sort=False,
+        marker_colors=[CORES_CLASSE[c] for c in ordem], textinfo="value",
+    ))
+    dnt.update_layout(
+        height=280, margin=dict(l=0, r=0, t=10, b=0),
+        paper_bgcolor="rgba(0,0,0,0)", font=dict(color=TINTA, size=13),
+        legend=dict(orientation="h", y=-0.05),
+        annotations=[dict(text=f"{int(meta['n_acoes'])}<br>ações", showarrow=False, font_size=18)],
+    )
+    st.plotly_chart(dnt, use_container_width=True)
+
+with v2:
+    st.markdown("**Preço atual × valor justo (Graham)**")
+    st.caption(
+        "Cada ponto é uma ação. **Acima** da linha = valor justo maior que o preço "
+        "(barata 🟢); **abaixo** = cara 🔴. Quanto mais longe da linha, maior o desvio."
+    )
+    sc = gold.dropna(subset=["valor_graham", "preco_atual"])
+    sc = sc[sc["valor_graham"] > 0]
+    fig_sc = go.Figure()
+    for cls in ordem:
+        d = sc[sc["classificacao"] == cls]
+        fig_sc.add_trace(go.Scatter(
+            x=d["preco_atual"], y=d["valor_graham"], mode="markers", name=cls,
+            marker=dict(color=CORES_CLASSE[cls], size=11, line=dict(width=0.5, color="white")),
+            text=d["ticker"],
+            hovertemplate="%{text}<br>preço R$ %{x:.2f}<br>justo R$ %{y:.2f}<extra></extra>",
+        ))
+    lim = float(max(sc["preco_atual"].max(), sc["valor_graham"].quantile(0.92)))
+    fig_sc.add_trace(go.Scatter(
+        x=[0, lim], y=[0, lim], mode="lines", name="preço = justo",
+        line=dict(dash="dot", color=CINZA), hoverinfo="skip",
+    ))
+    fig_sc.update_layout(xaxis_title="preço atual (R$)", yaxis_title="valor justo (R$)")
+    fig_sc.update_xaxes(range=[0, sc["preco_atual"].max() * 1.1])
+    fig_sc.update_yaxes(range=[0, lim * 1.05])
+    fig_sc = estilo(fig_sc, 280)
+    fig_sc.update_layout(showlegend=True, legend=dict(orientation="h", y=-0.25))
+    st.plotly_chart(fig_sc, use_container_width=True)
+
 st.divider()
 
 
