@@ -93,7 +93,7 @@ dados_kpi = [
     ("Ações analisadas", f"{int(meta['n_acoes'])}", None),
     ("Oportunidades (Buy)", f"{int((gold['classificacao'] == 'Buy').sum())}", None),
     ("Subvalorizadas 💎", f"{int(gold['selo_subvalorizada'].sum())}", None),
-    ("1º do ranking", topo["ticker"], f"score {topo['score_final']:+.2f}"),
+    ("1º do ranking", topo["ticker"], None),
 ]
 for col, (label, valor, delta) in zip(kpis, dados_kpi):
     with col.container(border=True):
@@ -142,11 +142,23 @@ with st.container(border=True):
         unsafe_allow_html=True,
     )
 
+    # pre-computa o valuation para alinhar as colunas (ambas terminam no grafico)
+    eh_op = ult["setor"] == "operacional" and pd.notna(ult["fco_mil"])
+    valores = preco = prob = None
+    if eh_op:
+        cresc = crescimento_lucro(sil["fco_mil"].tolist(), sil["ano"].tolist())
+        valores = simular_valores(
+            ult["fco_mil"], cresc, float(meta["selic"]),
+            ult["divida_liquida_mil"], ult["acoes_circulacao_mil"],
+        )
+        preco = linha["preco_atual"]
+        if valores.size and pd.notna(preco):
+            prob = float((valores > preco).mean())
+
     col_a, col_b = st.columns(2, gap="large")
     with col_a:
         st.markdown("**Pontos fortes e fracos por método**")
-        st.caption("Cada barra = desvios-padrão acima (verde) ou abaixo (vermelho) da média "
-                   "do universo. À direita = ponto forte; à esquerda = fraco.")
+        st.caption("Cada barra: desvios-padrão acima (verde) ou abaixo (vermelho) da média do universo.")
         metodos = ["Graham", "Buffett", "EV/EBITDA", "Lynch", "DCF"]
         zs = [linha["z_graham"], linha["z_buffett"], linha["z_evebitda"],
               linha["z_lynch"], linha["z_dcf"]]
@@ -159,29 +171,22 @@ with st.container(border=True):
 
     with col_b:
         st.markdown(f"**Quanto {tk} vale? — valor justo em R$ (Monte Carlo)**")
-        if ult["setor"] == "operacional" and pd.notna(ult["fco_mil"]):
-            cresc = crescimento_lucro(sil["fco_mil"].tolist(), sil["ano"].tolist())
-            valores = simular_valores(
-                ult["fco_mil"], cresc, float(meta["selic"]),
-                ult["divida_liquida_mil"], ult["acoes_circulacao_mil"],
-            )
-            preco = linha["preco_atual"]
-            if valores.size and pd.notna(preco):
-                prob = float((valores > preco).mean())
-                st.caption("2.500 cenários do valor justo (variando crescimento e juros). "
-                           "A linha vermelha é o preço de hoje; 'montanha' à direita = barata.")
-                fig2 = go.Figure(go.Histogram(x=valores, nbinsx=40, marker_color=INDIGO, opacity=0.8))
-                fig2.add_vline(x=preco, line_color=VERMELHO, line_width=3,
-                               annotation_text=f"preço R$ {preco:.0f}", annotation_position="top")
-                fig2.update_layout(xaxis_title="valor justo por ação (R$)", yaxis_title="nº de cenários")
-                st.plotly_chart(estilo(fig2, 300), use_container_width=True)
-                st.markdown(f"➡️ **{prob:.0%}** dos cenários dão valor acima do preço — "
-                            f"**{prob:.0%} de chance de {tk} estar subvalorizada**.")
-            else:
-                st.info("Sem valor justo calculável para esta ação.")
+        if prob is not None:
+            st.caption("2.500 cenários do valor justo; a linha vermelha é o preço de hoje.")
+            fig2 = go.Figure(go.Histogram(x=valores, nbinsx=40, marker_color=INDIGO, opacity=0.8))
+            fig2.add_vline(x=preco, line_color=VERMELHO, line_width=3,
+                           annotation_text=f"preço R$ {preco:.0f}", annotation_position="top")
+            fig2.update_layout(xaxis_title="valor justo por ação (R$)", yaxis_title="nº de cenários")
+            st.plotly_chart(estilo(fig2, 300), use_container_width=True)
         else:
-            st.info("Valuation por fluxo de caixa se aplica a empresas operacionais — "
-                    "bancos e holdings usam outra lógica.")
+            st.caption("Valuation por fluxo de caixa só se aplica a empresas operacionais.")
+            st.info("Bancos e holdings usam outra lógica de valuation.")
+
+    if prob is not None:
+        st.markdown(
+            f"➡️ **{prob:.0%}** dos cenários dão valor acima do preço — "
+            f"**{prob:.0%} de chance de {tk} estar subvalorizada**."
+        )
 
 # ====================== risco da carteira (quadro) ======================
 with st.container(border=True):
