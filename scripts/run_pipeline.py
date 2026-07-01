@@ -15,6 +15,7 @@ ETAPAS = [
     ("Bronze precos", "run_prices.py"),
     ("Silver", "run_silver.py"),
     ("Gold (+ meta de atualizacao)", "run_gold.py"),
+    ("Monte Carlo (tabelas)", "run_montecarlo.py"),
     ("Dataset ML", "run_ml_dataset.py"),
 ]
 
