@@ -71,6 +71,7 @@ def build_gold(engine) -> pd.DataFrame:
             {
                 "ticker": row["ticker"],
                 "setor": row["setor"],
+                "setor_economico": row["setor_economico"],  # p/ slicer no dashboard
                 "dt_refer": row["dt_refer"],
                 "preco_atual": preco,
                 # Graham

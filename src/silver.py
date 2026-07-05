@@ -182,6 +182,7 @@ def build_silver(engine, universo: dict) -> pd.DataFrame:
                     dfc=do_ano(dfc, ticker, ano),
                 )
                 ind["ano"] = ano
+                ind["setor_economico"] = info["setor_economico"]  # carrega p/ o dashboard
                 linhas.append(ind)
             except (ValueError, IndexError) as exc:
                 print(f"  [aviso] {ticker}/{ano} pulado: {exc}")

@@ -16,11 +16,13 @@ venv/
 .ipynb_checkpoints/
 
 # ===== Dados brutos / cache local (não vão pro Git) =====
-data/
+data/*
 *.zip
 *.parquet
 *.csv
 !docs/**/*.csv          # exceção: CSVs de exemplo dentro de docs/, se houver
+# exceção: universo curado (IBrX-100) É versionado (comentário em linha própria!)
+!data/universo_ibrx100.csv
 
 # ===== dbt =====
 dbt/target/
