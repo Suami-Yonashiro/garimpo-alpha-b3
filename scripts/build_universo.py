@@ -125,7 +125,10 @@ def ler_carteira_b3() -> tuple[pd.DataFrame, str]:
     b3["ticker"] = b3["ticker"].astype(str).str.strip()
     b3 = b3[b3["ticker"].str.match(r"^[A-Z][A-Z0-9]{3}\d+$", na=False)]  # inclui B3SA3
     b3["nome"] = b3["nome"].str.strip()
-    return b3[["ticker", "nome"]].reset_index(drop=True), data
+    # 'Qtde. Teorica' = free float (ancora de escala p/ nº de acoes; ver silver.py)
+    b3["free_float"] = (b3["q"].astype(str).str.replace(".", "", regex=False)
+                        .str.strip().replace("", "0").astype("int64"))
+    return b3[["ticker", "nome", "free_float"]].reset_index(drop=True), data
 
 
 def resolver_por_nome(nome: str, cad: pd.DataFrame) -> str:
@@ -158,9 +161,10 @@ def main() -> None:
             novos.append((tk, nome, cnpj))
         setor_ativ = setor_por_cnpj.get(cnpj, "")
         setor = SETOR_OVERRIDE.get(tk, setor_metodologico(setor_ativ))
-        linhas.append((tk, cnpj, setor, setor_economico(tk, setor_ativ)))
+        linhas.append((tk, cnpj, setor, setor_economico(tk, setor_ativ), row["free_float"]))
 
-    final = pd.DataFrame(linhas, columns=["ticker", "cnpj", "setor", "setor_economico"])
+    final = pd.DataFrame(linhas, columns=["ticker", "cnpj", "setor",
+                                          "setor_economico", "free_float"])
     final = final.sort_values("ticker").reset_index(drop=True)
 
     cabecalho = (
@@ -169,6 +173,7 @@ def main() -> None:
         "# setor (operacional/financeiro) = chave metodologica: financeiro nao recebe "
         "EV/EBITDA nem DCF\n"
         "# B3SA3=operacional (tem EBITDA), BRAP4=financeiro (holding), por decisao do analista\n"
+        "# free_float = Qtde. Teorica da carteira B3 (ancora de escala do nº de acoes)\n"
     )
     with open(DEST, "w", encoding="utf-8", newline="") as fh:
         fh.write(cabecalho)

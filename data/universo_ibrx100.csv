@@ -2,103 +2,104 @@
 # tickers: carteira B3 | cnpj + setor_economico: cadastro CVM (SETOR_ATIV)
 # setor (operacional/financeiro) = chave metodologica: financeiro nao recebe EV/EBITDA nem DCF
 # B3SA3=operacional (tem EBITDA), BRAP4=financeiro (holding), por decisao do analista
-ticker,cnpj,setor,setor_economico
-ABEV3,07.526.557/0001-00,operacional,Consumo nao Ciclico
-ALOS3,05.878.397/0001-32,operacional,Consumo Ciclico
-ANIM3,09.288.252/0001-32,operacional,Consumo Ciclico
-ASAI3,06.057.223/0001-71,operacional,Consumo nao Ciclico
-AUAU3,18.328.118/0001-09,operacional,Consumo Ciclico
-AURE3,00.194.724/0001-13,operacional,Utilidade Publica
-AXIA3,00.001.180/0001-26,operacional,Utilidade Publica
-AZZA3,16.590.234/0001-76,operacional,Consumo Ciclico
-B3SA3,09.346.601/0001-25,operacional,Financeiro
-BBAS3,00.000.000/0001-91,financeiro,Financeiro
-BBDC3,60.746.948/0001-12,financeiro,Financeiro
-BBDC4,60.746.948/0001-12,financeiro,Financeiro
-BBSE3,17.344.597/0001-94,financeiro,Financeiro
-BEEF3,67.620.377/0001-14,operacional,Consumo nao Ciclico
-BPAC11,30.306.294/0001-45,financeiro,Financeiro
-BRAP4,03.847.461/0001-92,financeiro,Materiais Basicos
-BRAV3,12.091.809/0001-55,operacional,Petroleo e Gas
-BRKM5,42.150.391/0001-70,operacional,Materiais Basicos
-CBAV3,61.409.892/0001-73,operacional,Materiais Basicos
-CEAB3,45.242.914/0001-05,operacional,Consumo Ciclico
-CMIG4,17.155.730/0001-64,operacional,Utilidade Publica
-CMIN3,08.902.291/0001-15,operacional,Materiais Basicos
-COGN3,02.800.026/0001-40,operacional,Consumo Ciclico
-CPFE3,02.429.144/0001-93,operacional,Utilidade Publica
-CPLE3,76.483.817/0001-20,operacional,Utilidade Publica
-CSAN3,50.746.577/0001-15,operacional,Consumo nao Ciclico
-CSMG3,17.281.106/0001-03,operacional,Utilidade Publica
-CSNA3,33.042.730/0001-04,operacional,Materiais Basicos
-CURY3,08.797.760/0001-83,operacional,Consumo Ciclico
-CVCB3,10.760.260/0001-19,operacional,Consumo Ciclico
-CXSE3,22.543.331/0001-00,financeiro,Financeiro
-CYRE3,73.178.600/0001-18,operacional,Consumo Ciclico
-DIRR3,16.614.075/0001-00,operacional,Consumo Ciclico
-ECOR3,04.149.454/0001-80,operacional,Bens Industriais
-EGIE3,02.474.103/0001-19,operacional,Utilidade Publica
-EMBJ3,07.689.002/0001-89,operacional,Bens Industriais
-ENEV3,04.423.567/0001-21,operacional,Utilidade Publica
-ENGI11,00.864.214/0001-06,operacional,Utilidade Publica
-EQTL3,03.220.438/0001-73,operacional,Utilidade Publica
-EZTC3,08.312.229/0001-73,operacional,Consumo Ciclico
-FLRY3,60.840.055/0001-31,operacional,Saude
-GGBR4,33.611.500/0001-19,operacional,Materiais Basicos
-GGPS3,09.229.201/0001-30,operacional,Bens Industriais
-GMAT3,24.990.777/0001-09,operacional,Consumo nao Ciclico
-GOAU4,92.690.783/0001-09,operacional,Materiais Basicos
-HAPV3,05.197.443/0001-38,operacional,Saude
-HYPE3,02.932.074/0001-91,operacional,Consumo nao Ciclico
-IGTI11,60.543.816/0001-93,operacional,Consumo Ciclico
-INTB3,82.901.000/0001-27,operacional,Consumo Ciclico
-IRBR3,33.376.989/0001-91,financeiro,Financeiro
-ISAE4,02.998.611/0001-04,operacional,Utilidade Publica
-ITSA4,61.532.644/0001-15,financeiro,Financeiro
-ITUB3,60.872.504/0001-23,financeiro,Financeiro
-ITUB4,60.872.504/0001-23,financeiro,Financeiro
-JHSF3,08.294.224/0001-65,operacional,Consumo Ciclico
-KLBN11,89.637.490/0001-45,operacional,Materiais Basicos
-LREN3,92.754.738/0001-62,operacional,Consumo Ciclico
-MBRF3,03.853.896/0001-40,operacional,Consumo nao Ciclico
-MDNE3,12.049.631/0001-84,operacional,Consumo Ciclico
-MGLU3,47.960.950/0001-21,operacional,Consumo Ciclico
-MOTV3,02.846.056/0001-97,operacional,Bens Industriais
-MOVI3,07.976.147/0001-60,operacional,Bens Industriais
-MRVE3,08.343.492/0001-20,operacional,Consumo Ciclico
-MULT3,07.816.890/0001-53,operacional,Consumo Ciclico
-NATU3,32.785.497/0001-97,operacional,Consumo nao Ciclico
-ORVR3,03.279.285/0001-30,operacional,Utilidade Publica
-PETR3,33.000.167/0001-01,operacional,Petroleo e Gas
-PETR4,33.000.167/0001-01,operacional,Petroleo e Gas
-POMO4,88.611.835/0001-29,operacional,Bens Industriais
-PRIO3,10.629.105/0001-68,operacional,Petroleo e Gas
-PSSA3,02.149.205/0001-69,financeiro,Financeiro
-RADL3,61.585.865/0001-51,operacional,Consumo Ciclico
-RAIL3,02.387.241/0001-60,operacional,Bens Industriais
-RAPT4,89.086.144/0001-16,operacional,Bens Industriais
-RDOR3,06.047.087/0001-39,operacional,Saude
-RECV3,03.342.704/0001-30,operacional,Petroleo e Gas
-RENT3,16.670.085/0001-55,operacional,Bens Industriais
-SANB11,90.400.888/0001-42,financeiro,Financeiro
-SAPR11,76.484.013/0001-45,operacional,Utilidade Publica
-SAUD3,58.119.199/0001-51,operacional,Saude
-SBSP3,43.776.517/0001-80,operacional,Utilidade Publica
-SIMH3,07.415.333/0001-20,operacional,Bens Industriais
-SLCE3,89.096.457/0001-55,operacional,Consumo nao Ciclico
-SMFT3,07.594.978/0001-78,operacional,Consumo Ciclico
-SMTO3,51.466.860/0001-56,operacional,Consumo nao Ciclico
-SUZB3,16.404.287/0001-55,operacional,Materiais Basicos
-TAEE11,07.859.971/0001-30,operacional,Utilidade Publica
-TEND3,71.476.527/0001-35,operacional,Consumo Ciclico
-TIMS3,02.421.421/0001-11,operacional,Comunicacoes
-TOTS3,53.113.791/0001-22,operacional,Tecnologia
-UGPA3,33.256.439/0001-39,operacional,Petroleo e Gas
-USIM5,60.894.730/0001-05,operacional,Materiais Basicos
-VALE3,33.592.510/0001-54,operacional,Materiais Basicos
-VAMO3,23.373.000/0001-32,operacional,Bens Industriais
-VBBR3,34.274.233/0001-02,operacional,Consumo Ciclico
-VIVA3,33.839.910/0001-11,operacional,Consumo Ciclico
-VIVT3,02.558.157/0001-62,operacional,Comunicacoes
-WEGE3,84.429.695/0001-11,operacional,Bens Industriais
-YDUQ3,08.807.432/0001-10,operacional,Consumo Ciclico
+# free_float = Qtde. Teorica da carteira B3 (ancora de escala do nº de acoes)
+ticker,cnpj,setor,setor_economico,free_float
+ABEV3,07.526.557/0001-00,operacional,Consumo nao Ciclico,4273841357
+ALOS3,05.878.397/0001-32,operacional,Consumo Ciclico,478558715
+ANIM3,09.288.252/0001-32,operacional,Consumo Ciclico,256720485
+ASAI3,06.057.223/0001-71,operacional,Consumo nao Ciclico,1338623499
+AUAU3,18.328.118/0001-09,operacional,Consumo Ciclico,205617553
+AURE3,00.194.724/0001-13,operacional,Utilidade Publica,317799925
+AXIA3,00.001.180/0001-26,operacional,Utilidade Publica,2156759550
+AZZA3,16.590.234/0001-76,operacional,Consumo Ciclico,109571260
+B3SA3,09.346.601/0001-25,operacional,Financeiro,4997059816
+BBAS3,00.000.000/0001-91,financeiro,Financeiro,2842496541
+BBDC3,60.746.948/0001-12,financeiro,Financeiro,1464429403
+BBDC4,60.746.948/0001-12,financeiro,Financeiro,5100889966
+BBSE3,17.344.597/0001-94,financeiro,Financeiro,616248544
+BEEF3,67.620.377/0001-14,operacional,Consumo nao Ciclico,454804863
+BPAC11,30.306.294/0001-45,financeiro,Financeiro,1194624560
+BRAP4,03.847.461/0001-92,financeiro,Materiais Basicos,250914708
+BRAV3,12.091.809/0001-55,operacional,Petroleo e Gas,462883017
+BRKM5,42.150.391/0001-70,operacional,Materiais Basicos,265709734
+CBAV3,61.409.892/0001-73,operacional,Materiais Basicos,204441277
+CEAB3,45.242.914/0001-05,operacional,Consumo Ciclico,204964309
+CMIG4,17.155.730/0001-64,operacional,Utilidade Publica,1904057894
+CMIN3,08.902.291/0001-15,operacional,Materiais Basicos,1646519336
+COGN3,02.800.026/0001-40,operacional,Consumo Ciclico,1915914094
+CPFE3,02.429.144/0001-93,operacional,Utilidade Publica,187732538
+CPLE3,76.483.817/0001-20,operacional,Utilidade Publica,2969406694
+CSAN3,50.746.577/0001-15,operacional,Consumo nao Ciclico,2242671999
+CSMG3,17.281.106/0001-03,operacional,Utilidade Publica,359581776
+CSNA3,33.042.730/0001-04,operacional,Materiais Basicos,727975012
+CURY3,08.797.760/0001-83,operacional,Consumo Ciclico,160988231
+CVCB3,10.760.260/0001-19,operacional,Consumo Ciclico,408009727
+CXSE3,22.543.331/0001-00,financeiro,Financeiro,600000000
+CYRE3,73.178.600/0001-18,operacional,Consumo Ciclico,281609283
+DIRR3,16.614.075/0001-00,operacional,Consumo Ciclico,327091595
+ECOR3,04.149.454/0001-80,operacional,Bens Industriais,328954615
+EGIE3,02.474.103/0001-19,operacional,Utilidade Publica,357310487
+EMBJ3,07.689.002/0001-89,operacional,Bens Industriais,711833141
+ENEV3,04.423.567/0001-21,operacional,Utilidade Publica,1913352180
+ENGI11,00.864.214/0001-06,operacional,Utilidade Publica,325503046
+EQTL3,03.220.438/0001-73,operacional,Utilidade Publica,1247728993
+EZTC3,08.312.229/0001-73,operacional,Consumo Ciclico,121216090
+FLRY3,60.840.055/0001-31,operacional,Saude,447150822
+GGBR4,33.611.500/0001-19,operacional,Materiais Basicos,1258208269
+GGPS3,09.229.201/0001-30,operacional,Bens Industriais,314841214
+GMAT3,24.990.777/0001-09,operacional,Consumo nao Ciclico,457961064
+GOAU4,92.690.783/0001-09,operacional,Materiais Basicos,830837767
+HAPV3,05.197.443/0001-38,operacional,Saude,271662290
+HYPE3,02.932.074/0001-91,operacional,Consumo nao Ciclico,321083946
+IGTI11,60.543.816/0001-93,operacional,Consumo Ciclico,205800982
+INTB3,82.901.000/0001-27,operacional,Consumo Ciclico,113898409
+IRBR3,33.376.989/0001-91,financeiro,Financeiro,81534304
+ISAE4,02.998.611/0001-04,operacional,Utilidade Publica,415568772
+ITSA4,61.532.644/0001-15,financeiro,Financeiro,5970738360
+ITUB3,60.872.504/0001-23,financeiro,Financeiro,456130473
+ITUB4,60.872.504/0001-23,financeiro,Financeiro,5349695485
+JHSF3,08.294.224/0001-65,operacional,Consumo Ciclico,260721097
+KLBN11,89.637.490/0001-45,operacional,Materiais Basicos,804572623
+LREN3,92.754.738/0001-62,operacional,Consumo Ciclico,982593716
+MBRF3,03.853.896/0001-40,operacional,Consumo nao Ciclico,761175338
+MDNE3,12.049.631/0001-84,operacional,Consumo Ciclico,62112530
+MGLU3,47.960.950/0001-21,operacional,Consumo Ciclico,373155063
+MOTV3,02.846.056/0001-97,operacional,Bens Industriais,1002196725
+MOVI3,07.976.147/0001-60,operacional,Bens Industriais,156159722
+MRVE3,08.343.492/0001-20,operacional,Consumo Ciclico,374681353
+MULT3,07.816.890/0001-53,operacional,Consumo Ciclico,320022221
+NATU3,32.785.497/0001-97,operacional,Consumo nao Ciclico,838359453
+ORVR3,03.279.285/0001-30,operacional,Utilidade Publica,54399873
+PETR3,33.000.167/0001-01,operacional,Petroleo e Gas,3478483761
+PETR4,33.000.167/0001-01,operacional,Petroleo e Gas,4410960450
+POMO4,88.611.835/0001-29,operacional,Bens Industriais,728266241
+PRIO3,10.629.105/0001-68,operacional,Petroleo e Gas,757265605
+PSSA3,02.149.205/0001-69,financeiro,Financeiro,178825403
+RADL3,61.585.865/0001-51,operacional,Consumo Ciclico,1313915830
+RAIL3,02.387.241/0001-60,operacional,Bens Industriais,1221155293
+RAPT4,89.086.144/0001-16,operacional,Bens Industriais,176793154
+RDOR3,06.047.087/0001-39,operacional,Saude,1091469308
+RECV3,03.342.704/0001-30,operacional,Petroleo e Gas,274624898
+RENT3,16.670.085/0001-55,operacional,Bens Industriais,978479038
+SANB11,90.400.888/0001-42,financeiro,Financeiro,360347199
+SAPR11,76.484.013/0001-45,operacional,Utilidade Publica,201077478
+SAUD3,58.119.199/0001-51,operacional,Saude,251735971
+SBSP3,43.776.517/0001-80,operacional,Utilidade Publica,3506733260
+SIMH3,07.415.333/0001-20,operacional,Bens Industriais,135653148
+SLCE3,89.096.457/0001-55,operacional,Consumo nao Ciclico,220403658
+SMFT3,07.594.978/0001-78,operacional,Consumo Ciclico,556651316
+SMTO3,51.466.860/0001-56,operacional,Consumo nao Ciclico,123583436
+SUZB3,16.404.287/0001-55,operacional,Materiais Basicos,612918471
+TAEE11,07.859.971/0001-30,operacional,Utilidade Publica,218568234
+TEND3,71.476.527/0001-35,operacional,Consumo Ciclico,114768786
+TIMS3,02.421.421/0001-11,operacional,Comunicacoes,777451080
+TOTS3,53.113.791/0001-22,operacional,Tecnologia,533997411
+UGPA3,33.256.439/0001-39,operacional,Petroleo e Gas,1067870496
+USIM5,60.894.730/0001-05,operacional,Materiais Basicos,518256757
+VALE3,33.592.510/0001-54,operacional,Materiais Basicos,4268646710
+VAMO3,23.373.000/0001-32,operacional,Bens Industriais,448052066
+VBBR3,34.274.233/0001-02,operacional,Consumo Ciclico,1192004780
+VIVA3,33.839.910/0001-11,operacional,Consumo Ciclico,123698325
+VIVT3,02.558.157/0001-62,operacional,Comunicacoes,707125712
+WEGE3,84.429.695/0001-11,operacional,Bens Industriais,1485954732
+YDUQ3,08.807.432/0001-10,operacional,Consumo Ciclico,261365845

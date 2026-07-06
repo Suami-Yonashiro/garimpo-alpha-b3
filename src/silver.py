@@ -23,6 +23,21 @@ TERMO_DA = "Deprecia"          # D&A na DFC: a linha de D&A contem 'Deprecia'
                                # (as '6.03.x Amortizacoes de financiamento' nao tem)
 
 
+def normalizar_escala(df: pd.DataFrame) -> pd.DataFrame:
+    """CVM tem empresas que reportam em UNIDADE; o resto do codigo assume MIL.
+
+    Converte as linhas em UNIDADE para MIL (divide VL_CONTA por 1000). E linha a
+    linha porque ha empresa com escala mista (ex.: VAMO3). Sem isso, o lucro/PL de
+    quem reporta em UNIDADE (ex.: VIVA3) fica 1000x inflado.
+    """
+    if "ESCALA_MOEDA" not in df.columns or "VL_CONTA" not in df.columns:
+        return df
+    df = df.copy()
+    em_unidade = df["ESCALA_MOEDA"].astype(str).str.upper().str.contains("UNID", na=False)
+    df.loc[em_unidade, "VL_CONTA"] = df.loc[em_unidade, "VL_CONTA"] / 1000.0
+    return df
+
+
 def dedup_ultimo(df: pd.DataFrame) -> pd.DataFrame:
     """Mantem so o exercicio corrente (ULTIMO) e a versao mais recente.
 
@@ -102,22 +117,30 @@ def indicadores_ev(dre: pd.DataFrame, bpp: pd.DataFrame, bpa: pd.DataFrame,
     }
 
 
-def acoes_em_circulacao(acoes: pd.DataFrame) -> float:
+def acoes_em_circulacao(acoes: pd.DataFrame, free_float: float | None = None) -> float:
     """Acoes em circulacao (totais - tesouraria), padronizadas em MILHARES.
 
-    Normaliza a inconsistencia de unidade da CVM: se o total esta em unidades
-    (>= limiar), divide total e tesouraria por 1000 para virar milhares.
+    A CVM reporta o nº de acoes ora em UNIDADES, ora em MILHARES, sem indicar
+    qual — e as magnitudes se sobrepoem (o 'milhares' da ABEV, 1.6e7, e MENOR que
+    o 'unidades' da MDNE, 8.5e7), entao um limiar por magnitude nao separa.
+    Ancora robusta: o FREE FLOAT da carteira B3. O total de acoes TEM de ser
+    >= free float; logo, se (total-tesouro) >= free_float o dado esta em unidades
+    (converte p/ milhares dividindo por 1000); senao ja esta em milhares.
+    Sem free_float, cai no limiar antigo (menos robusto).
     """
     a = acoes.iloc[0]
     total = float(a["QT_ACAO_TOTAL_CAP_INTEGR"])
     tesouro = float(a["QT_ACAO_TOTAL_TESOURO"])
-    fator = 1000.0 if total >= _LIMIAR_UNIDADES else 1.0
-    return (total - tesouro) / fator
+    circ = total - tesouro
+    if free_float:
+        return circ / 1000.0 if circ >= free_float else circ
+    return circ / 1000.0 if total >= _LIMIAR_UNIDADES else circ  # fallback
 
 
 def calcular_indicadores(
     dre: pd.DataFrame, bpp: pd.DataFrame, acoes: pd.DataFrame, ticker: str, setor: str,
     bpa: pd.DataFrame | None = None, dfc: pd.DataFrame | None = None,
+    free_float: float | None = None,
 ) -> dict:
     """Aplica dedup e calcula LPA e VPA, resolvendo contas por descricao.
 
@@ -131,7 +154,8 @@ def calcular_indicadores(
     patrimonio = valor_por_descricao(bpp_u, *TERMOS_PL)   # em mil R$
     receita = valor_conta(dre_u, CD_RECEITA)              # em mil R$
     # nº de acoes pode faltar em anos antigos (arquivo nao publicado) -> LPA/VPA None
-    qt_acoes = acoes_em_circulacao(acoes) if acoes is not None and not acoes.empty else None
+    qt_acoes = (acoes_em_circulacao(acoes, free_float)
+                if acoes is not None and not acoes.empty else None)
 
     indicadores = {
         "ticker": ticker,
@@ -159,11 +183,11 @@ def calcular_indicadores(
 
 def build_silver(engine, universo: dict) -> pd.DataFrame:
     """Le o Bronze do banco, calcula indicadores por empresa e grava a Silver."""
-    dre = pd.read_sql("select * from bronze_cvm_dre", engine)
-    bpp = pd.read_sql("select * from bronze_cvm_bpp", engine)
-    bpa = pd.read_sql("select * from bronze_cvm_bpa", engine)
-    dfc = pd.read_sql("select * from bronze_cvm_dfc", engine)
-    acoes = pd.read_sql("select * from bronze_cvm_acoes", engine)
+    dre = normalizar_escala(pd.read_sql("select * from bronze_cvm_dre", engine))
+    bpp = normalizar_escala(pd.read_sql("select * from bronze_cvm_bpp", engine))
+    bpa = normalizar_escala(pd.read_sql("select * from bronze_cvm_bpa", engine))
+    dfc = normalizar_escala(pd.read_sql("select * from bronze_cvm_dfc", engine))
+    acoes = pd.read_sql("select * from bronze_cvm_acoes", engine)  # QT_ACAO: sem escala
 
     def do_ano(df: pd.DataFrame, ticker: str, ano: int) -> pd.DataFrame:
         return df[(df["ticker"] == ticker) & (df["ano"] == ano)]
@@ -180,6 +204,7 @@ def build_silver(engine, universo: dict) -> pd.DataFrame:
                     ticker=ticker, setor=info["setor"],
                     bpa=do_ano(bpa, ticker, ano),
                     dfc=do_ano(dfc, ticker, ano),
+                    free_float=info.get("free_float"),
                 )
                 ind["ano"] = ano
                 ind["setor_economico"] = info["setor_economico"]  # carrega p/ o dashboard

@@ -30,6 +30,7 @@ def carregar_universo(caminho: Path = CAMINHO_CSV) -> dict[str, dict]:
             "cnpj": row["cnpj"],
             "setor": row["setor"],
             "setor_economico": row["setor_economico"],
+            "free_float": int(row.get("free_float") or 0),
         }
     return universo
 
