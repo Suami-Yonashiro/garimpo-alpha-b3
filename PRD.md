@@ -6,7 +6,26 @@
 
 > ⚠️ **Disclaimer:** projeto educacional e de portfólio. Não constitui recomendação de investimento. Resultados passados não garantem resultados futuros.
 
-> 📌 **Status de implementação:** este PRD é a **visão/especificação original** e permanece como referência. O **estado atual do que foi construído** (e os desvios conscientes — ex.: universo, survivorship) está no [`README.md`](README.md) e em [`docs/02-decisoes-adr.md`](docs/02-decisoes-adr.md). Itens ainda não implementados (dbt, Pandera, Prefect, Docker, SHAP, agendamento) estão no roadmap do README.
+> 📌 **Este PRD é a VISÃO ORIGINAL** (jun/2026) e é mantido como registro da intenção de projeto. O que foi **de fato construído** diverge conscientemente em alguns pontos — a tabela abaixo documenta essa fidelidade para não gerar dúvida. O detalhamento do estado atual vive no [`README.md`](README.md) e nos [`docs/02-decisoes-adr.md`](docs/02-decisoes-adr.md).
+
+### Fidelidade — visão original × o que foi construído
+
+| Tema | Visão do PRD | Realidade construída |
+|---|---|---|
+| **Universo** | IBrX-100 | ✅ IBrX-100 (**99 ações**), da carteira B3 + cadastro CVM, versionado em `data/universo_ibrx100.csv` |
+| **Setor** | categórico (1 feature) | ✅ **dois** campos: `setor` metodológico (`operacional`/`financeiro`) + `setor_economico` (~11, vitrine) |
+| **Financeiras** | — | ✅ bancos/seguradoras/holdings recebem **3 métodos** (sem EV/EBITDA e DCF), pesos renormalizados |
+| **Atualização** | diária (preços) + trimestral (CVM) | ⚠️ **manual** — um comando roda o pipeline; agendamento é roadmap |
+| **ML — horizontes** | 4 (3/6/9/12m) + prob. calibrada + SHAP | ⚠️ **só 6m**, sem calibração/SHAP; AUC ~0,50 (honesto, sem vazamento) |
+| **Orquestração** | Prefect | 📋 planejado (hoje: `run_pipeline.py` sequencial) |
+| **Qualidade** | Pandera / dbt | 📋 planejado (hoje: ~41 testes pytest + ruff) |
+| **Infra** | Docker | 📋 planejado |
+| **Fonte `fundamentus`** | snapshot corrente | ❌ não usado (preço corrente vem do yfinance/brapi) |
+| **Nomes de tabelas (§5)** | `raw_*`, `fact_*`, `dim_*` | nomes reais: `bronze_cvm_*`, `silver_fundamentals`, `gold_fundamental_scores`, `gold_montecarlo_*` |
+| **Dashboard** | Streamlit | ✅ Streamlit + **Power BI** (showcase, `garimpo-alpha-b3.pbix`) |
+
+> Legenda: ✅ conforme · ⚠️ parcial/diferente · 📋 planejado (roadmap) · ❌ descartado.
+> As seções seguintes preservam o texto original da visão — cruze sempre com esta tabela.
 
 ---
 
@@ -189,6 +208,11 @@ Ranking unificado por **selos** (mais interpretável e honesto que um único nú
 ---
 
 ## 10. Stack tecnológica.
+
+> ⚠️ **Stack planejada (visão).** dbt, Pandera, Prefect, Docker e SHAP **não** foram
+> implementados — ver a tabela de **Fidelidade** no topo. O que roda hoje: Pandas/SQL,
+> `run_pipeline.py` (orquestração sequencial), pytest + ruff, GitHub Actions (CI).
+
 | Camada | Tecnologia |
 |---|---|
 | Extração | Python (requests, yfinance, `python-bcb`) |

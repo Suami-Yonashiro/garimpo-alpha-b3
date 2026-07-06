@@ -3,10 +3,13 @@
 > ⚠️ **Disclaimer:** projeto **educacional e de portfólio**. Não constitui recomendação de
 > investimento. Resultados passados não garantem resultados futuros.
 
+![Dashboard do Garimpo Alpha B3](docs/dashboard.png)
+
 ## O que é, em uma frase
 
 A B3 tem centenas de ações — **olhar uma a uma é inviável**. O **Garimpo Alpha B3** lê os
-dados oficiais de ~50 empresas líquidas e entrega um **ranking objetivo** que responde três
+dados oficiais das **99 ações do IBrX-100** (as mais líquidas da bolsa) e entrega um
+**ranking objetivo** que responde três
 perguntas que todo investidor faz: a ação é **barata**? a empresa é **boa**? e **qual o
 risco**? Tudo de forma transparente — dá para ver exatamente como cada número foi calculado.
 
@@ -41,29 +44,76 @@ Sobre essa base, três camadas de análise:
 ```mermaid
 flowchart LR
     subgraph F[Fontes oficiais]
-      CVM[CVM<br/>balanços]
+      B3[B3<br/>carteira IBrX-100]
+      CAD[CVM cadastro<br/>CNPJ + setor]
+      CVM[CVM DFP<br/>balanços]
       YF[yfinance<br/>preços]
-      BR[brapi<br/>cotação]
       BCB[Banco Central<br/>SELIC, IPCA, câmbio]
     end
-    F --> B[(Bronze<br/>dado cru)]
-    B --> S[(Silver<br/>limpo + indicadores)]
-    S --> G[(Gold<br/>score + selos)]
+    B3 --> U[Universo<br/>99 ações]
+    CAD --> U
+    U --> B
+    CVM --> B
+    YF --> B
+    BCB --> B
+    subgraph SB[Supabase / PostgreSQL]
+      B[(Bronze<br/>dado cru)] --> S[(Silver<br/>limpo + indicadores)]
+      S --> G[(Gold<br/>score + selos)]
+    end
     S --> ML[Machine Learning<br/>backtest]
     S --> MC[Monte Carlo<br/>valor + risco]
-    G --> D[Dashboard]
+    G --> D[Dashboard<br/>Streamlit · Power BI]
     ML --> D
     MC --> D
 ```
 
-### De onde vêm os dados (4 fontes oficiais)
+### As três camadas em detalhe (e o Supabase)
+
+Todo o pipeline vive num **[Supabase](https://supabase.com/) (PostgreSQL gerenciado na
+nuvem)** — é o banco onde as três camadas Medallion são gravadas e de onde o dashboard lê.
+A conexão é feita pelo **SESSION pooler (porta 5432)**, configurada via `.env` (ver
+[`.env.example`](.env.example); credenciais nunca são versionadas).
+
+| Camada | Tabelas | O que **vem cru** | O que **de fato usamos** |
+|---|---|---|---|
+| **Bronze** | `bronze_cvm_dre`, `bronze_cvm_bpp`, `bronze_cvm_bpa`, `bronze_cvm_dfc`, `bronze_cvm_acoes`, `bronze_prices` | A DFP da CVM traz o **plano de contas inteiro** (centenas de linhas por empresa/ano) + metadados (versão, escala, data de divulgação); os preços trazem OHLCV diário | Só as **contas-chave**: lucro (3.11), patrimônio líquido, receita (3.01), EBIT (3.05), caixa (1.01.01), fluxo operacional (6.01) e D&A; dos preços, o **fechamento ajustado** |
+| **Silver** | `silver_fundamentals` | — | **Limpeza + indicadores derivados**: dedup do exercício (último + versão mais recente), LPA/VPA por **descrição de conta** (o código muda entre empresas), EBITDA, dívida líquida, e as **normalizações de escala** (UNIDADE→MIL; nº de ações ancorado no free-float) |
+| **Gold** | `gold_fundamental_scores`, `gold_montecarlo_valuation`, `gold_montecarlo_carteira`, `gold_montecarlo_carteira_resumo`, `meta_pipeline` | — | **O produto pronto**: score composto + ranking + selos + `setor_economico`; distribuições do Monte Carlo; e o `meta_pipeline` (data da última atualização, SELIC, nº de ações) que alimenta o topo do dashboard |
+
+### De onde vêm os dados (6 fontes oficiais)
 
 | Fonte | O que é | O que extraímos |
 |---|---|---|
-| **CVM** (dados.cvm.gov.br) | Órgão regulador do mercado; portal de **Dados Abertos** do governo | Demonstrações financeiras (DFP): balanço, DRE (resultado) e fluxo de caixa — **com a data de divulgação** (essencial para o *point-in-time*) |
+| **B3** ([sistemaswebb3-listados.b3.com.br](https://sistemaswebb3-listados.b3.com.br/indexPage/day/IBXX?language=pt-br)) | Bolsa brasileira; carteira do dia do índice **IBrX-100** | A **lista de tickers** do universo + o **free float** de cada ação (âncora de escala) |
+| **CVM — Cadastro** ([cad_cia_aberta.csv](https://dados.cvm.gov.br/dados/CIA_ABERTA/CAD/DADOS/cad_cia_aberta.csv)) | Cadastro de companhias abertas | **CNPJ** (chave da CVM) e **setor de atividade** (`SETOR_ATIV`) de cada empresa |
+| **CVM — DFP** (dados.cvm.gov.br) | Órgão regulador; portal de **Dados Abertos** do governo | Demonstrações financeiras: balanço, DRE (resultado) e fluxo de caixa — **com a data de divulgação** (essencial para o *point-in-time*) |
 | **yfinance** | Biblioteca que lê o **Yahoo Finance** | Preços históricos diários **ajustados** (desde 2012) + o **Ibovespa** (índice da bolsa) |
 | **brapi** (brapi.dev) | API de mercado da B3 | Cotação corrente (fallback) |
 | **BCB/SGS** | **Banco Central** — Sistema Gerenciador de Séries | **SELIC** (juros), **IPCA** (inflação) e **câmbio** USD/BRL |
+
+### O universo: IBrX-100 e os dois tipos de "setor"
+
+O universo analisado são as **99 ações do IBrX-100** (o índice das mais líquidas da B3). Ele
+**não é hardcoded**: a lista de tickers vem da **carteira oficial da B3** e cada CNPJ é
+resolvido no **cadastro da CVM** — tudo rastreável à fonte, com a **data da carteira**
+registrada no arquivo [`data/universo_ibrx100.csv`](data/universo_ibrx100.csv). O script
+[`scripts/build_universo.py`](scripts/build_universo.py) reproduz esse arquivo.
+
+Cada ação carrega **dois campos de setor com papéis diferentes** — e essa distinção é chave:
+
+- **`setor` (metodológico): `operacional` ou `financeiro`.** Decide *quais métodos se
+  aplicam*. Bancos, seguradoras e holdings financeiras **não têm EV/EBITDA nem fluxo de caixa
+  para DCF** no sentido tradicional, então recebem **3 métodos** (Graham, Buffett, Lynch) em
+  vez de 5 — com os pesos renormalizados. Não é gambiarra: é reconhecer que valuation de banco
+  ≠ valuation de indústria. *(Casos de fronteira decididos à mão: B3SA3 = operacional, pois
+  tem EBITDA real; BRAP4 = financeiro, por ser holding pura.)*
+- **`setor_economico` (~11 setores): Financeiro, Utilidade Pública, Consumo Cíclico, Materiais
+  Básicos, Saúde…** É só **vitrine/diversificação** — não muda o score. Serve para mostrar que
+  o garimpo cobre **a economia toda**, e não apenas "operacional vs financeiro".
+
+> Os dois campos podem **discordar de propósito**: a BRAP4 é `financeiro` (metodológico, por
+> ser holding) mas `Materiais Básicos` (econômico, pois sua exposição é a Vale). Isso é
+> intencional — cada campo responde a uma pergunta diferente.
 
 ### Os 5 métodos fundamentalistas (glossário)
 
@@ -86,7 +136,7 @@ Este projeto foi desenhado para mostrar, na prática, as três funções de uma 
 formato confiável e analisável — garantindo qualidade, reprodutibilidade e automação.
 
 *Neste projeto:*
-- **Ingestão de 4 fontes heterogêneas** (CVM por CSV; yfinance/brapi/BCB por API).
+- **Ingestão de 6 fontes heterogêneas** (B3 e CVM DFP/cadastro por CSV; yfinance/brapi/BCB por API).
 - **Arquitetura Medallion** (Bronze→Silver→Gold) no **Supabase/PostgreSQL**.
 - **Dado *point-in-time*:** usa a *data de divulgação* oficial (CVM `DT_RECEB`) para nunca
   "olhar o futuro" — o erro nº 1 em projetos financeiros.
@@ -116,8 +166,9 @@ comunicação para quem não é técnico.
 *Neste projeto:*
 - **Score interpretável** (z-score com pesos explícitos), não uma caixa-preta.
 - **Selos de negócio:** ✅ fundamentos fortes · 💎 subvalorizada · 🛡️ risco baixo.
-- **Dashboard com storytelling** (do macro ao específico), com **explicação didática em cada
-  gráfico** — qualquer pessoa entende.
+- **Dois dashboards** sobre a mesma base Gold: **Streamlit** (interativo, protagonista) e um
+  showcase em **Power BI** ([`garimpo-alpha-b3.pbix`](garimpo-alpha-b3.pbix) versionado) —
+  ambos com storytelling do macro ao específico e **explicação didática em cada gráfico**.
 - **Comunicação honesta das limitações** (abaixo) — maturidade que vale mais que número bonito.
 
 ---
@@ -153,15 +204,31 @@ referencial). A pergunta: *o ranking realmente separa boas de más ações?*
 
 Transparência faz parte da entrega:
 
-- **Survivorship bias:** o universo são ~50 ações **líquidas de hoje** aplicadas a todo o
+- **Survivorship bias:** o universo são as **99 ações do IBrX-100 de hoje** aplicadas a todo o
   histórico — isso infla os retornos absolutos do backtest (empresas que quebraram não estão
   na amostra). O contraste melhores-vs-piores segue válido.
 - **Universo não é *point-in-time*:** o ideal (escolher as ações como eram em cada data)
   está documentado mas não implementado (ver `docs/02-decisoes-adr.md`).
+- **Cobertura do valuation por DCF:** o bloco "Preço × Valor justo" cobre ~70 das 94 ações do
+  ranking — **só onde o DCF faz sentido**. Ficam de fora as financeiras (por método) e
+  empresas de fluxo de caixa operacional negativo/errático (construtoras, aluguel de frota,
+  reestruturação). Mostrar um "valor justo" delas seria pior que omitir.
 - **ML sem poder preditivo:** com este universo e *features*, prever o índice é ~aleatório —
   honesto e esperado; o produto não depende disso.
 - **DCF para bancos/holdings:** simplificado; valuation por fluxo de caixa não se aplica bem
-  a eles (tratados à parte).
+  a eles (tratados à parte, com 3 métodos).
+
+### Notas de qualidade de dados (para quem for estender)
+
+A CVM é oficial, mas tem armadilhas que o pipeline já trata — vale saber antes de mexer:
+
+- **Plano de contas resolvido por *descrição*, não por código:** o código de uma mesma conta
+  (ex.: lucro líquido) **muda entre empresas** (e até entre bancos). Casamos pela descrição.
+- **Escala da moeda (`ESCALA_MOEDA`):** algumas empresas reportam em **UNIDADE**, não em MIL
+  (ex.: VIVA3) — sem normalizar, o lucro/patrimônio fica **1000× inflado**.
+- **Número de ações sem escala:** a CVM não indica se o total está em unidades ou milhares, e
+  as magnitudes se sobrepõem. Ancoramos no **free float da carteira B3** para decidir.
+- **`composicao_capital` só existe a partir de 2020** → LPA/VPA ficam nulos antes disso.
 
 ---
 
@@ -185,10 +252,31 @@ uv run streamlit run dashboard/app.py        # http://localhost:8501
 ```
 
 - **Atualizar dados:** rode o `run_pipeline` (passo 3) — único comando necessário; a "última
-  atualização" no topo do dashboard reflete essa execução.
-- **Só consultar:** rode o `streamlit` (passo 4).
+  atualização" no topo do dashboard reflete essa execução. As tabelas do Supabase usam
+  `if_exists="replace"`, então cada execução **reconstrói** a Gold a partir das fontes.
+- **Só consultar:** rode o `streamlit` (passo 4). Alternativamente, abra o showcase em
+  **Power BI** (`garimpo-alpha-b3.pbix`) e clique em **Atualizar** para puxar a Gold do Supabase.
 - Análises avulsas: `run_backtest.py`, `run_montecarlo.py`. Testes/lint: `uv run pytest -q`,
   `uv run ruff check .`.
+
+### Atualizar o universo (a cada quadrimestre)
+
+O IBrX-100 é **rebalanceado pela B3 a cada quadrimestre**, então a lista de ações muda algumas
+vezes por ano. Para atualizar:
+
+```bash
+# 1. baixe a carteira do dia do IBrX-100 no site da B3 e salve em:
+#    data/raw/b3/ibrx100.csv
+# 2. regenere o universo (resolve CNPJ + setor pelas fontes oficiais):
+uv run python scripts/build_universo.py
+# 3. reprocesse tudo com o novo universo:
+uv run python scripts/run_pipeline.py
+```
+
+**Por que assim:** o `build_universo.py` **preserva os CNPJs já verificados** (o CNPJ é um
+fato estável) e só tenta resolver por nome os **tickers novos**, imprimindo-os como
+`[CONFERIR]` — nunca confia num casamento automático em silêncio. Assim a atualização é
+reproduzível e segura, sem reintroduzir erros de identificação.
 
 > Em ambientes com **Windows Smart App Control**, o `uv run` pode ser bloqueado (erro 4551) —
 > recrie o ambiente (`uv venv --clear && uv sync …`) ou reinicie a máquina.
@@ -199,7 +287,7 @@ uv run streamlit run dashboard/app.py        # http://localhost:8501
 
 **Implementado:** Python 3.11 · `uv` · Supabase/PostgreSQL (Medallion) · SQLAlchemy ·
 pandas/NumPy/SciPy · scikit-learn / XGBoost / LightGBM · yfinance · brapi · `python-bcb` ·
-Streamlit + Plotly · pytest · ruff · GitHub Actions (CI).
+Streamlit + Plotly · **Power BI** (showcase) · pytest · ruff · GitHub Actions (CI).
 
 **Roadmap (ver seção abaixo):** agendamento automático, Pandera, Docker, dbt.
 
@@ -208,15 +296,17 @@ Streamlit + Plotly · pytest · ruff · GitHub Actions (CI).
 - **Agendamento automático** do pipeline (GitHub Actions) — dados se atualizando sozinhos.
 - **Qualidade de dados** com Pandera (validação de schemas/regras).
 - **Docker** para reprodutibilidade (`docker compose up`).
-- Filtro de liquidez *point-in-time* (elimina o survivorship); universo até o IBrX-100 completo.
+- Filtro de liquidez *point-in-time* (elimina o survivorship — o universo IBrX-100 já está
+  implementado; falta reconstruí-lo como era em cada data do histórico).
 
 ## Estrutura e documentação
 
 ```
 ingestion/  extratores (cvm, precos, bcb) → Bronze
-src/        fundamental/ (5 métodos + score + selos) · ml/ · montecarlo/ · backtest.py
-scripts/    run_pipeline e etapas individuais
+src/        universo.py (carrega o IBrX-100) · fundamental/ (5 métodos + score + selos) · ml/ · montecarlo/ · backtest.py
+scripts/    run_pipeline · build_universo (reproduz o universo) · etapas individuais
 dashboard/  app Streamlit
+data/       universo_ibrx100.csv (curado e versionado; o resto é cache local ignorado)
 tests/      ~41 testes
 docs/       spike de viabilidade · ADRs · dicionário de dados
 ```
