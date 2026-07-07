@@ -108,29 +108,34 @@ Demonstrar, num único produto coeso e funcional, as competências dos três pap
 ---
 
 ## 5. Arquitetura de dados (Medallion no Supabase).
+
+> ℹ️ Diagrama da **visão original** (nomes de tabela `raw_*`/`fact_*` são aspiracionais — os nomes reais estão na tabela de **Fidelidade** no topo).
+
+```text
 Fontes: CVM · yfinance/brapi · fundamentus · BCB/SGS
-│ extração (Python, agendada)
-▼
-┌──────────────────── BRONZE ────────────────────┐ cru, append-only, com snapshot_date
-│ raw_cvm_dfp, raw_cvm_itr, raw_prices, │ preserva o ponto-no-tempo
-│ raw_fundamentus, raw_bcb_macro │
-└───────────────────────┬─────────────────────────┘
-│ limpeza, tipagem, dedup, validação (Pandera)
-▼
-┌──────────────────── SILVER ────────────────────┐ 1 linha por (ticker, data)
-│ fact_fundamentals, fact_prices, dim_macro │ indicadores derivados (LPA, VPA, EV, EBITDA…)
-└───────────────────────┬─────────────────────────┘
-│ regras de negócio + modelos
-▼
-┌───────────────────── GOLD ──────────────────────┐ pronto para consumo
-│ fundamental_scores (Camada 1) │
-│ ml_predictions (Camada 2) │
-│ monte_carlo_valuation (Camada 3 — #1) │
-│ monte_carlo_portfolio (Camada 3 — #2) │
-│ stock_ranking (visão final integrada) │
-└───────────────────────┬──────────────────────────┘
-▼
-Streamlit / Power BI (opcional).
+   │ extração (Python, agendada)
+   ▼
+┌──────────────────── BRONZE ────────────────────┐  cru, append-only, com snapshot_date
+│ raw_cvm_dfp, raw_cvm_itr, raw_prices,          │  preserva o ponto-no-tempo
+│ raw_fundamentus, raw_bcb_macro                 │
+└───────────────────────┬────────────────────────┘
+   │ limpeza, tipagem, dedup, validação (Pandera)
+   ▼
+┌──────────────────── SILVER ────────────────────┐  1 linha por (ticker, data)
+│ fact_fundamentals, fact_prices, dim_macro      │  indicadores derivados (LPA, VPA, EV…)
+└───────────────────────┬────────────────────────┘
+   │ regras de negócio + modelos
+   ▼
+┌───────────────────── GOLD ─────────────────────┐  pronto para consumo
+│ fundamental_scores       (Camada 1)            │
+│ ml_predictions           (Camada 2)            │
+│ monte_carlo_valuation    (Camada 3 — #1)       │
+│ monte_carlo_portfolio    (Camada 3 — #2)       │
+│ stock_ranking            (visão final)         │
+└───────────────────────┬────────────────────────┘
+   ▼
+Streamlit / Power BI
+```
 
 > **Trade-off documentado:** o purista guardaria o Bronze cru como arquivos (Parquet) em object storage. Para este produto, manter tudo no Supabase (Postgres) simplifica a stack e é totalmente adequado ao escopo. Supabase Storage fica como evolução futura para o raw.
 
@@ -281,6 +286,10 @@ Sequência por papel: **Engenharia de Dados → Cientista de Dados → Analista 
 ---
 
 ## 15. Estrutura de pastas planejada.
+
+> ℹ️ Estrutura **planejada** (visão). A estrutura **real** do repositório está no README (ex.: sem `flows/`, `dbt/`, `data_quality/` — ainda no roadmap).
+
+```text
 garimpo-alpha-b3/
 ├── README.md
 ├── PRD.md
@@ -288,17 +297,18 @@ garimpo-alpha-b3/
 ├── Dockerfile
 ├── pyproject.toml
 ├── .github/workflows/ci.yml
-├── flows/ # orquestração Prefect
-├── ingestion/ # extratores: cvm, yfinance/brapi, fundamentus, bcb
-├── dbt/ # modelos Silver/Gold + testes
+├── flows/              # orquestração Prefect
+├── ingestion/          # extratores: cvm, yfinance/brapi, fundamentus, bcb
+├── dbt/                # modelos Silver/Gold + testes
 ├── src/
-│ ├── fundamental/ # Graham, Buffett, Lynch, EV/EBITDA, DCF, score
-│ ├── ml/ # features, treino, validação temporal, SHAP, backtest
-│ └── montecarlo/ # valuation e portfólio
-├── dashboard/ # app Streamlit
-├── data_quality/ # validações Pandera
-├── notebooks/ # exploração narrada
+│   ├── fundamental/    # Graham, Buffett, Lynch, EV/EBITDA, DCF, score
+│   ├── ml/             # features, treino, validação temporal, SHAP, backtest
+│   └── montecarlo/     # valuation e portfólio
+├── dashboard/          # app Streamlit
+├── data_quality/       # validações Pandera
+├── notebooks/          # exploração narrada
 └── tests/
+```
 
 ---
 
