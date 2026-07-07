@@ -278,6 +278,14 @@ fato estável) e só tenta resolver por nome os **tickers novos**, imprimindo-os
 `[CONFERIR]` — nunca confia num casamento automático em silêncio. Assim a atualização é
 reproduzível e segura, sem reintroduzir erros de identificação.
 
+### Atualização automática (GitHub Actions)
+
+Além de rodar à mão, o pipeline tem um workflow agendado
+([`.github/workflows/pipeline.yml`](.github/workflows/pipeline.yml)) que roda **semanalmente**
+(e sob demanda, pelo botão *Run workflow*), reprocessa tudo e grava no Supabase. A credencial
+do banco vem de um **Secret** (`SUPABASE_DB_URL`) — nunca do código. Assim a "última
+atualização" do dashboard se mantém fresca sem intervenção manual.
+
 > Em ambientes com **Windows Smart App Control**, o `uv run` pode ser bloqueado (erro 4551) —
 > recrie o ambiente (`uv venv --clear && uv sync …`) ou reinicie a máquina.
 
@@ -287,13 +295,12 @@ reproduzível e segura, sem reintroduzir erros de identificação.
 
 **Implementado:** Python 3.11 · `uv` · Supabase/PostgreSQL (Medallion) · SQLAlchemy ·
 pandas/NumPy/SciPy · scikit-learn / XGBoost / LightGBM · yfinance · brapi · `python-bcb` ·
-Streamlit + Plotly · **Power BI** (showcase) · pytest · ruff · GitHub Actions (CI).
+Streamlit + Plotly · **Power BI** (showcase) · pytest · ruff · GitHub Actions (CI + pipeline agendado).
 
-**Roadmap (ver seção abaixo):** agendamento automático, Pandera, Docker, dbt.
+**Roadmap (ver seção abaixo):** Pandera, Docker, dbt.
 
 ## Roadmap
 
-- **Agendamento automático** do pipeline (GitHub Actions) — dados se atualizando sozinhos.
 - **Qualidade de dados** com Pandera (validação de schemas/regras).
 - **Docker** para reprodutibilidade (`docker compose up`).
 - Filtro de liquidez *point-in-time* (elimina o survivorship — o universo IBrX-100 já está

@@ -1,0 +1,48 @@
+name: Pipeline (atualizacao de dados)
+
+# Reprocessa o pipeline fim-a-fim (Bronze -> Silver -> Gold -> Monte Carlo -> dataset ML)
+# e grava o resultado no Supabase. A "ultima atualizacao" do dashboard reflete esta execucao.
+#
+# Gatilhos:
+#  - schedule: semanal (segunda, ~06:00 BRT / 09:00 UTC). Ajuste o cron a gosto.
+#  - workflow_dispatch: botao "Run workflow" na aba Actions (roda sob demanda).
+#
+# PRE-REQUISITO: cadastrar o Secret SUPABASE_DB_URL no repositorio
+# (Settings -> Secrets and variables -> Actions -> New repository secret).
+on:
+  schedule:
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+# evita duas execucoes simultaneas gravando no banco ao mesmo tempo
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Configurar Python 3.11
+        run: uv python install 3.11
+
+      - name: Instalar dependencias (nucleo + ingestao + ml)
+        run: uv sync --extra ingestion --extra ml
+
+      # cache dos zips da CVM (dados historicos estaveis) p/ nao rebaixar toda semana
+      - name: Cache dos dados brutos da CVM
+        uses: actions/cache@v4
+        with:
+          path: data/raw/cvm
+          key: cvm-dfp-zips-v1
+
+      - name: Rodar o pipeline
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: uv run python scripts/run_pipeline.py
