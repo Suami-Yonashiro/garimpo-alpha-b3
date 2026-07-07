@@ -1,22 +1,33 @@
 # Garimpo Alpha B3
+[![CI](https://github.com/Suami-Yonashiro/garimpo-alpha-b3/actions/workflows/ci.yml/badge.svg)](https://github.com/Suami-Yonashiro/garimpo-alpha-b3/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
+![uv](https://img.shields.io/badge/uv-managed-DE5FE9?logo=uv&logoColor=white)
+![Status](https://img.shields.io/badge/status-portf%C3%B3lio-success)
+
+![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)
+![pandas](https://img.shields.io/badge/pandas-150458?logo=pandas&logoColor=white)
+![NumPy](https://img.shields.io/badge/NumPy-013243?logo=numpy&logoColor=white)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E?logo=scikitlearn&logoColor=white)
+![XGBoost](https://img.shields.io/badge/XGBoost-189FDD)
+![LightGBM](https://img.shields.io/badge/LightGBM-9ACD32)
+![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?logo=streamlit&logoColor=white)
+![Power BI](https://img.shields.io/badge/Power%20BI-F2C811?logo=powerbi&logoColor=black)
+![pytest](https://img.shields.io/badge/pytest-0A9EDC?logo=pytest&logoColor=white)
 
 > ⚠️ **Disclaimer:** projeto **educacional e de portfólio**. Não constitui recomendação de
 > investimento. Resultados passados não garantem resultados futuros.
 
 ![Dashboard do Garimpo Alpha B3](docs/dashboard.png)
+*Screenshot do arquivo garimpo-alpha-b3.pbix o dashboard do projeto.*
 
-## O que é, em uma frase
+## Contexto
 
 A B3 tem centenas de ações — **olhar uma a uma é inviável**. O **Garimpo Alpha B3** lê os
 dados oficiais das **99 ações do IBrX-100** (as mais líquidas da bolsa) e entrega um
 **ranking objetivo** que responde três
-perguntas que todo investidor faz: a ação é **barata**? a empresa é **boa**? e **qual o
-risco**? Tudo de forma transparente — dá para ver exatamente como cada número foi calculado.
+perguntas que todo investidor faz: A ação é **barata**? A empresa é **boa**? E **qual o risco**? Tudo de forma transparente — dá para ver exatamente como cada número foi calculado.
 
-> Em termos técnicos: um pipeline de dados *end-to-end* que combina **análise
-> fundamentalista**, **machine learning** e **simulação de Monte Carlo**, com um dashboard
-> interativo. Foi construído para demonstrar, num produto único, as competências de
-> **Engenheiro**, **Cientista** e **Analista de Dados**.
+> Em termos técnicos: um pipeline de dados *end-to-end* que combina **análise fundamentalista**, **machine learning** e **simulação de Monte Carlo**, com um dashboard interativo. Foi construído para demonstrar, em um produto único, as competências de **Engenheiro**, **Cientista** e **Analista de Dados**.
 
 ---
 
@@ -32,14 +43,9 @@ O projeto organiza os dados em três níveis (arquitetura **Medallion**, padrão
 
 Sobre essa base, três camadas de análise:
 
-1. **Fundamentos (vale a pena?)** — 5 métodos clássicos (Graham, Buffett, EV/EBITDA, Lynch,
-   DCF) viram um **score único** comparável entre as ações.
-2. **Machine Learning (dá para prever?)** — um modelo tenta prever se a ação supera o
-   Ibovespa. *Spoiler honesto:* quase não dá (e isso é esperado — explico abaixo).
-3. **Monte Carlo (qual o risco?)** — em vez de um número único, roda **2.500 cenários**
-   variando as premissas incertas (crescimento dos lucros, taxa de juros). Para uma ação,
-   gera a **distribuição do valor justo** (e a chance de estar barata); para a carteira, a
-   **distribuição de retornos** em 6 meses — de onde sai o risco no pior caso (**VaR/CVaR**).
+1. **Fundamentos (vale a pena?)** — 5 métodos clássicos (Graham, Buffett, EV/EBITDA, Lynch, DCF) viram um **score único** comparável entre as ações.
+2. **Machine Learning (dá para prever?)** — um modelo tenta prever se a ação supera o Ibovespa. *Spoiler honesto:* quase não dá (e isso é esperado — explico abaixo).
+3. **Monte Carlo (qual o risco?)** — em vez de um número único, roda **2.500 cenários** variando as premissas incertas (crescimento dos lucros, taxa de juros). Para uma ação, gera a **distribuição do valor justo** (e a chance de estar barata); para a carteira, a **distribuição de retornos** em 6 meses — de onde sai o risco no pior caso (**VaR/CVaR**).
 
 ```mermaid
 flowchart LR
@@ -69,10 +75,8 @@ flowchart LR
 
 ### As três camadas em detalhe (e o Supabase)
 
-Todo o pipeline vive num **[Supabase](https://supabase.com/) (PostgreSQL gerenciado na
-nuvem)** — é o banco onde as três camadas Medallion são gravadas e de onde o dashboard lê.
-A conexão é feita pelo **SESSION pooler (porta 5432)**, configurada via `.env` (ver
-[`.env.example`](.env.example); credenciais nunca são versionadas).
+Todo o pipeline vive em um **[Supabase](https://supabase.com/) (PostgreSQL gerenciado na nuvem)** — é o banco onde as três camadas Medallion são gravadas e de onde o dashboard lê.
+A conexão é feita pelo **SESSION pooler (porta 5432)**, configurada via `.env` (ver [`.env.example`](.env.example); credenciais nunca são versionadas).
 
 | Camada | Tabelas | O que **vem cru** | O que **de fato usamos** |
 |---|---|---|---|
@@ -127,7 +131,7 @@ Cada ação carrega **dois campos de setor com papéis diferentes** — e essa d
 
 ---
 
-## O que cada papel fez aqui (vs. o mercado)
+## O que cada atribuição profissional executou (vs. o mercado)
 
 Este projeto foi desenhado para mostrar, na prática, as três funções de uma equipe de dados.
 
@@ -139,9 +143,8 @@ formato confiável e analisável — garantindo qualidade, reprodutibilidade e a
 - **Ingestão de 6 fontes heterogêneas** (B3 e CVM DFP/cadastro por CSV; yfinance/brapi/BCB por API).
 - **Arquitetura Medallion** (Bronze→Silver→Gold) no **Supabase/PostgreSQL**.
 - **Dado *point-in-time*:** usa a *data de divulgação* oficial (CVM `DT_RECEB`) para nunca
-  "olhar o futuro" — o erro nº 1 em projetos financeiros.
-- **Robustez do mundo real:** retry/lotes para a instabilidade do yfinance; normalização de
-  inconsistências da CVM (unidades do nº de ações; plano de contas que muda por setor).
+  "olhar o futuro".
+- **Robustez do mundo real:** retry/lotes para a instabilidade do yfinance; normalização de inconsistências da CVM (unidades do nº de ações; plano de contas que muda por setor).
 - **Reprodutibilidade e CI:** um comando roda o pipeline inteiro; testes + lint a cada push.
 
 ### 🔬 Cientista de Dados
@@ -150,8 +153,7 @@ estatístico**, e comunica a incerteza com honestidade.
 
 *Neste projeto:*
 - **Dataset *point-in-time*** (junção pela data de divulgação) — sem vazamento de informação.
-- **Validação temporal *walk-forward* com embargo** (nunca *k-fold* aleatório) — o critério
-  de qualidade nº 1 em ML financeiro.
+- **Validação temporal *walk-forward* com embargo** (nunca *k-fold* aleatório).
 - **3 algoritmos de árvore de decisão** comparados: **Random Forest** (várias árvores
   "votando"), **XGBoost** e **LightGBM** (árvores sequenciais que corrigem o erro da
   anterior — os mais usados em competições). **Métrica honesta** (AUC ~0,50): a ausência de
