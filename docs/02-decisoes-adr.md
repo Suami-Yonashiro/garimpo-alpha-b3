@@ -30,6 +30,24 @@ resolvido com uma fonte frágil de preços de deslistadas.
 A **ferramenta viva (ranking diário)** NÃO sofre desse viés — ela ranqueia o que é
 investível hoje. O viés afeta **apenas a prova histórica (backtest)**.
 
+### Resultado medido (2026-07)
+Cumprindo a decisão ("medir a direção e magnitude"), refizemos o backtest só com os **58
+veteranos** (histórico utilizável desde 2013), excluindo **32 entrantes tardios** (IPOs
+recentes + entradas com lacuna de dado — ex.: `composicao_capital` só existe desde 2020), que
+são proxies de composição survivor-enviesada. Isso dá um **teto** para o efeito:
+
+| Universo | Melhores (top-3) | Piores (bottom-3) | Ibovespa |
+|---|--:|--:|--:|
+| Completo (90) | +667% | −79% | +188% |
+| Só veteranos (58) | +459% | −32% | +188% |
+
+- **Magnitude:** o retorno do topo cai **+667% → +459%** (no máximo ~⅓ vem da composição enviesada).
+- **Direção:** superestima os retornos absolutos, como esperado.
+- **Reprodução:** `scripts/analise_survivorship.py`.
+- **O sinal é robusto:** mesmo só com veteranos, top (+459%) ≫ IBOV (+188%) ≫ bottom (−32%),
+  Sharpe 0,66, drawdown −13%. O survivorship **infla o número**, mas **não cria** o contraste
+  joio/trigo. Detalhe no README (seção Resultados).
+
 ---
 
 ## ADR-002 — Universo do backtest por filtro de liquidez point-in-time

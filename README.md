@@ -184,16 +184,36 @@ referencial). A pergunta: *o ranking realmente separa boas de más ações?*
 
 | Carteira | Retorno acumulado | Sharpe (retorno/risco) | Pior queda | Acerto vs IBOV |
 |---|--:|--:|--:|--:|
-| **Melhores (top do ranking)** | **+1000%** | **0,85** | **−10%** | **73%** |
-| Piores (fundo do ranking) | −12% | 0,16 | −77% | — |
-| Ibovespa (referência) | +203% | 0,50 | −28% | — |
+| **Melhores (top do ranking)** | **+667%** | **0,77** | **−10%** | **67%** |
+| Piores (fundo do ranking) | −79% | −0,15 | −87% | — |
+| Ibovespa (referência) | +188% | 0,47 | −28% | — |
 
-> **Conclusão:** as "melhores" do ranking renderam **muito mais** que as "piores" (+1000% vs
-> −12%) e que o índice, com **menos risco** (Sharpe maior, queda menor) e acertando 73% dos
+> **Conclusão:** as "melhores" do ranking renderam **muito mais** que as "piores" (+667% vs
+> −79%) e que o índice, com **menos risco** (Sharpe maior, queda menor) e acertando 67% dos
 > períodos. Isso mostra que o score **separa joio de trigo** — é o principal resultado do
 > projeto. ⚠️ Os **números absolutos** são otimistas por *survivorship bias* (usamos os
 > sobreviventes de hoje — ver [Limitações](#limitações-honestas)); por isso o que importa é o
-> **contraste** entre melhores e piores, não o "+1000%" isolado.
+> **contraste** entre melhores e piores, não o "+667%" isolado. **E dá para medir esse viés —
+> logo abaixo.**
+
+#### Quanto o survivorship infla? (medição, não achismo)
+
+Não dá para caçar os "mortos" (ações que quebraram) com dado gratuito — mas dá para **medir a
+direção e a ordem de grandeza** do viés. Refizemos o backtest só com os **58 veteranos** (com
+histórico utilizável desde 2013), excluindo **32 entrantes tardios** — IPOs recentes *e*
+entradas com lacuna de dado (ex.: `composicao_capital` só existe desde 2020). Esses entrantes
+são proxies de composição survivor-enviesada, então isso dá um **teto** para o efeito:
+
+| Universo | Melhores (top-3) | Piores (bottom-3) | Ibovespa |
+|---|--:|--:|--:|
+| Completo (90 ações) | +667% | −79% | +188% |
+| **Só veteranos (58)** | **+459%** | −32% | +188% |
+
+O topo cai de **+667% → +459%** — no máximo **~⅓ do retorno** depende da composição enviesada.
+**Mas o sinal sobrevive ao teste:** mesmo só com veteranos, as melhores (+459%) batem o índice
+(+188%) e as piores (−32%) com folga, com Sharpe 0,66 e queda de apenas −13%. Conclusão honesta:
+**o survivorship infla o número absoluto, mas não *cria* a separação joio/trigo — ela é real.**
+Reproduza com [`scripts/analise_survivorship.py`](scripts/analise_survivorship.py).
 
 - **Monte Carlo:** afirmações probabilísticas, ex.: *"PETR4 tem ~100% de chance de estar
   subvalorizada"*.
